@@ -133,7 +133,8 @@ function defaultState(){
       {id:uid(), title:'Зарядка утром', kind:'good', streak:0, best:0, last:null, frozen:false, days:{}},
       {id:uid(), title:'Не залипать в телефоне перед сном', kind:'bad', streak:0, best:0, last:null, frozen:false, days:{}}
     ],
-    pets: [], furniture: [], log: [], lastCollect: null
+    pets: [], furniture: [], log: [], lastCollect: null,
+    built: [], lastShow: null
   };
 }
 
@@ -147,6 +148,8 @@ function load(){
   if(!S.pets) S.pets = [];
   if(!S.log) S.log = [];
   if(S.lastCollect === undefined) S.lastCollect = null;
+  if(!S.built) S.built = [];
+  if(S.lastShow === undefined) S.lastShow = null;
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -158,6 +161,7 @@ function load(){
     if(it.x == null || it.y == null){ it.x = FURN_MAP[it.id].x0; it.y = FURN_MAP[it.id].y0; }
     return it;
   }).filter(function(x){ return !!x; });
+  syncRooms();
 }
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
@@ -201,12 +205,37 @@ function freeX(x, used){
   return best == null ? x : best;
 }
 
-var ROOMS = [
+var BASE_ROOMS = [
   {id:'living',  name:'Гостиная', tag:'CAM 01', wall:'cream', floor:'oak'},
   {id:'kitchen', name:'Кухня',    tag:'CAM 02', wall:'mint',  floor:'tile'},
   {id:'bedroom', name:'Спальня',  tag:'CAM 03', wall:'lilac', floor:'walnut'},
   {id:'kids',    name:'Детская',  tag:'CAM 04', wall:'sky',   floor:'moss'}
 ];
+
+/* Здания, которые строятся за каштаны. У каждого свой плюс. */
+var EXTRA_ROOMS = [
+  {id:'theater', name:'Театр',      wall:'lilac', floor:'walnut', deco:'🎭', price:180,
+   bonus:'Представление питомцев с мини-сюжетом. Посмотрела — получаешь каштаны.'},
+  {id:'library', name:'Библиотека', wall:'cream', floor:'walnut', deco:'📚', price:140,
+   bonus:'За каждую отмеченную привычку платят на 5 🌰 больше — тишина помогает.'},
+  {id:'museum',  name:'Музей',      wall:'mint',  floor:'tile',   deco:'🏺', price:220,
+   bonus:'Каждый питомец приносит на 2 🌰 больше при сборе дохода дома.'}
+];
+
+var ROOMS = BASE_ROOMS.slice();
+function syncRooms(){
+  var out = BASE_ROOMS.slice();
+  (S.built || []).forEach(function(id){
+    EXTRA_ROOMS.forEach(function(r){
+      if(r.id === id && out.indexOf(r) < 0) out.push(r);
+    });
+  });
+  out.forEach(function(r, i){ r.tag = 'CAM ' + pad2(i + 1); });
+  ROOMS = out;
+}
+function hasRoom(id){
+  return (S.built || []).indexOf(id) >= 0;
+}
 
 function pad2(n){ return ('0' + n).slice(-2); }
 function clockStr(off){
@@ -246,7 +275,8 @@ function moodInfo(){
 function incomeHTML(){
   if(!S.pets.length) return '';
   var m = moodInfo();
-  var per = m.happy ? 10 : 5;
+  var bonus = hasRoom('museum') ? 2 : 0;
+  var per = (m.happy ? 10 : 5) + bonus;
   var total = S.pets.length * per;
   var done = S.lastCollect === todayStr();
   var need = m.needs.map(function(n){
@@ -255,7 +285,7 @@ function incomeHTML(){
   }).join('');
   var b = ['<div class="income' + (m.happy ? ' happy' : '') + '">'];
   b.push('<div style="flex:1;min-width:0"><b>' + (m.happy ? 'Питомцы счастливы 🐾' : 'Питомцы скучают 🐾') + '</b>' +
-    '<div class="incomeTxt">' + per + '🌰 за питомца · условий выполнено ' + m.met + ' из 3</div>' +
+    '<div class="incomeTxt">' + per + '🌰 за питомца' + (bonus ? ' (включая музей +2)' : '') + ' · условий выполнено ' + m.met + ' из 3</div>' +
     '<div class="need">' + need + '</div></div>');
   b.push('<button class="btn ' + (done ? '' : 'primary') + '" id="collectBtn"' + (done ? ' disabled' : '') +
     ' style="padding:10px 12px;white-space:nowrap">' + (done ? 'Собрано ✓' : 'Собрать +' + total + ' 🌰') + '</button>');
@@ -266,7 +296,7 @@ function collectIncome(){
   if(!S.pets.length){ toast('Сначала заведи питомца'); return; }
   if(S.lastCollect === todayStr()){ toast('Сегодня уже собрано — приходи завтра'); return; }
   var m = moodInfo();
-  var per = m.happy ? 10 : 5;
+  var per = (m.happy ? 10 : 5) + (hasRoom('museum') ? 2 : 0);
   var total = S.pets.length * per;
   S.coins += total;
   S.lastCollect = todayStr();
@@ -384,12 +414,14 @@ function pickScene(list, ri, seed){
 function scenePlan(){
   var shift = Math.floor(Date.now() / 14000) % ROOMS.length;
   var seed = Math.floor(Date.now() / SCENE_MS);
-  var assign = {}, rooms = [[], [], [], []];
+  var assign = {}, rooms = [];
+  for(var ri0 = 0; ri0 < ROOMS.length; ri0++) rooms.push([]);
   S.pets.forEach(function(pp, pi){
     var r = (pi + shift) % ROOMS.length;
     assign[pi] = r; rooms[r].push(pi);
   });
-  var scenes = [null, null, null, null];
+  var scenes = [];
+  for(var sj = 0; sj < ROOMS.length; sj++) scenes.push(null);
   var flee = {};
   ROOMS.forEach(function(room, ri){
     var list = rooms[ri].filter(function(pi){ return assign[pi] === ri; });
@@ -407,6 +439,7 @@ function camsHTML(only){
   var customWall = S.wall !== 'cream';
   var customFloor = S.floor !== 'oak';
   var plan = scenePlan();
+  var after = '';
   var b = ['<div class="camGrid' + (only != null ? ' solo' : '') + '" id="camGrid">'];
   ROOMS.forEach(function(room, ri){
     if(only != null && only !== ri) return;
@@ -416,8 +449,14 @@ function camsHTML(only){
     b.push('<div class="cam" data-room="' + ri + '" style="' + st + '">');
     b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
     b.push('<div class="window"><div class="sky"></div><div class="frame"></div></div>');
+    if(room.deco) b.push('<div class="roomDeco">' + room.deco + '</div>');
     if(only != null) b.push('<button class="camBack" id="camBack" title="Назад">🔙</button>');
     b.push('<div class="camBar"><i class="rec"></i><b>' + room.tag + '</b><span>' + esc(room.name).toUpperCase() + '</span><em>' + clockStr(ri * 2) + '</em></div>');
+    if(room.id === 'theater' && only != null){
+      after = '<button class="roomAct" data-stage="1">🎭 ' +
+        (S.pets.length < 2 ? 'Нужно два питомца' : S.lastShow === todayStr() ? 'Сегодня уже смотрели · ещё завтра' : 'Смотреть представление · +' + SHOW_PRICE + ' 🌰') +
+        '</button>';
+    }
 
     S.furniture.forEach(function(it, i){
       var f = FURN_MAP[it.id];
@@ -458,8 +497,11 @@ function camsHTML(only){
     b.push('<div class="camEdge"></div>');
     b.push('</div>');
   });
+  if(only == null && ROOMS.length % 2 === 1){
+    b.push('<div class="camSlot" data-goshop="1"><b>+</b><span>Ещё комната<br>в магазине</span></div>');
+  }
   b.push('</div>');
-  return b.join('');
+  return b.join('') + after;
 }
 
 function houseHTML(){
@@ -613,9 +655,10 @@ function checkin(id, ok){
     if(hb.streak > hb.best) hb.best = hb.streak;
     hb.days[t] = 1;
     hb.last = t;
-    S.coins += 10;
+    var libBonus = hasRoom('library') ? 5 : 0;
+    S.coins += 10 + libBonus;
     S.tickets += 1;
-    toast('+10 🌰 и +1 🎟');
+    toast('+' + (10 + libBonus) + ' 🌰 и +1 🎟' + (libBonus ? ' · бонус библиотеки' : ''));
     var ms = MILESTONES[hb.streak];
     if(ms){
       S.coins += ms;
@@ -653,8 +696,120 @@ function habitModal(){
 }
 
 /* ---------- магазин ---------- */
+/* ---------- здания и театр ---------- */
+var SHOW_PRICE = 35;
+var SHOW_TITLES = [
+  'Каштан и звёздный фонарь',
+  'Тайна пропавшего носка',
+  'Пирог для очень голодного дракона',
+  'Как мышонок стал капитаном',
+  'Бал в честь первого дождя'
+];
+var SHOW_PLOTS = [
+  ['Они нашли на сцене каштан — и он засветился.',
+   'Оказалось, это звёздное семечко, а не каштан.',
+   'Посадили его посреди сцены и полили чаем.',
+   'Выросло дерево из света, зал ахнул.',
+   'Артисты поклонились, свет в зале зажёгся.'],
+  ['Пропал самый любимый носок — розовый, с помпоном.',
+   'Подозрение пало на того, кто громче всех храпел.',
+   'Обыскали всю сцену, заглянули даже в занавес.',
+   'Носок нашёлся на голове у главного героя.',
+   'Он вышел кланяться — в носке, как в шляпе.'],
+  ['На сцене появился пирог. Огромный. Ещё тёплый.',
+   'Но пирог почему-то начал шевелиться.',
+   'Из-под корочки высунулся любопытный нос.',
+   'Все вместе решили: пирог делим на всех.',
+   'Даже тот, кто собирался его съесть в одиночку.']
+];
+function theaterCast(){
+  var pool = S.pets.slice(0, 9);
+  if(pool.length < 2) return null;
+  var seed = Math.floor(Date.now() / 3600000) % 997;
+  var a = pool[seed % pool.length];
+  var c = pool[(seed + 2) % pool.length];
+  if(c.id === a.id) c = pool[(seed + 1) % pool.length];
+  if(c.id === a.id) return null;
+  var title = SHOW_TITLES[seed % SHOW_TITLES.length];
+  var plot = SHOW_PLOTS[seed % SHOW_PLOTS.length];
+  var nm = function(p){ return '<b>' + esc(p.name) + '</b>'; };
+  var pic = function(p){ return '<span class="castPet">' + petSVG(p.petId, p.feed, 58, p.level, tracesOf(p)) + '</span>'; };
+  var lines = [];
+  lines.push('<i>Занавес поднимается. На сцене — ' + nm(a) + ' и ' + nm(c) + '.</i>');
+  lines.push(pic(a) + nm(a) + ' — «' + plot[0] + '»');
+  lines.push(pic(c) + nm(c) + ' — «' + plot[1] + '»');
+  lines.push(pic(a) + nm(a) + ' — «' + plot[2] + '»');
+  lines.push(pic(c) + nm(c) + ' — «' + plot[3] + '»');
+  lines.push('<i>' + plot[4] + '</i>');
+  return {title:title, lines:lines, cast:pic(a) + '<span class="castNm">' + esc(a.name) + '</span><span class="castAmp">и</span>' + pic(c) + '<span class="castNm">' + esc(c.name) + '</span>'};
+}
+function showTheater(){
+  if(S.pets.length < 2){ toast('Для представления нужно хотя бы два питомца'); return; }
+  var sc = theaterCast();
+  if(!sc){ toast('Нужны два разных питомца'); return; }
+  var done = S.lastShow === todayStr();
+  modal('<h3>🎭 ' + esc(sc.title) + '</h3>' +
+    '<div class="theaterCast">' + sc.cast + '</div>' +
+    '<div class="stage" id="stage"></div>' +
+    '<div id="showPay"></div>');
+  var i = 0;
+  clearInterval(window._showTimer);
+  window._showTimer = setInterval(function(){
+    var el = document.getElementById('stage');
+    if(!el){ clearInterval(window._showTimer); return; }
+    if(i >= sc.lines.length){
+      clearInterval(window._showTimer);
+      var pay = document.getElementById('showPay');
+      if(pay){
+        if(done){
+          pay.innerHTML = '<p class="hint" style="text-align:center;margin:10px 0 0">Сегодня уже смотрели — приходите завтра.</p>';
+        } else {
+          pay.innerHTML = '<button class="btn orange" id="showPayBtn" style="width:100%;padding:13px;margin-top:10px">Занавес · +' + SHOW_PRICE + ' 🌰</button>';
+          document.getElementById('showPayBtn').onclick = function(){
+            S.coins += SHOW_PRICE;
+            S.lastShow = todayStr();
+            save(); render(); closeModal();
+            toast('+' + SHOW_PRICE + ' 🌰 — браво! 👏');
+          };
+        }
+      }
+      return;
+    }
+    var div = document.createElement('div');
+    div.className = 'showLine';
+    div.innerHTML = sc.lines[i];
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+    i++;
+  }, 1000);
+}
+
+function buyRoom(id){
+  var r = null;
+  EXTRA_ROOMS.forEach(function(x){ if(x.id === id) r = x; });
+  if(!r) return;
+  if(hasRoom(id)) return;
+  if(S.coins < r.price){ toast('Не хватает каштанов — нужно ' + r.price + ' 🌰'); return; }
+  S.coins -= r.price;
+  S.built.push(id);
+  syncRooms();
+  save(); render();
+  toast('🏗 ' + r.name + ' построен! Камера уже в доме');
+}
+
 function screenShop(){
-  var b = ['<h2>Магазин мебели</h2><p class="hint">Вещь сразу появляется в своей комнате, а потом её можно переставить как угодно.</p>'];
+  var b = ['<h2>Магазин</h2>'];
+  b.push('<h3>Здания</h3>');
+  b.push('<p class="hint">Новые комнаты. Покупаются один раз, камера появляется в доме сразу.</p>');
+  EXTRA_ROOMS.forEach(function(r){
+    var has = hasRoom(r.id);
+    b.push('<div class="card bld' + (has ? ' done' : '') + '"><div class="item"><div class="ico">' + r.deco + '</div>' +
+      '<div><div class="nm">' + esc(r.name) + '</div><div class="ds">' + esc(r.bonus) + '</div></div>' +
+      '<div class="spacer"></div>' +
+      (has ? '<span class="pill good">Построено</span>' : '<button class="btn primary" data-build="' + r.id + '">' + r.price + ' 🌰</button>') +
+      '</div></div>');
+  });
+  b.push('<h2>Мебель</h2><p class="hint">Вещь сразу появляется в своей комнате, а потом её можно переставить как угодно.</p>');
   ROOMS.forEach(function(room){
     var list = FURNITURE.filter(function(f){ return f.room === room.id; });
     if(!list.length) return;
@@ -761,6 +916,68 @@ function adoptGo(){
   toast(pet.name + ' теперь живёт у тебя 🎉');
 }
 
+
+/* ---------- характер и отношения питомцев ---------- */
+var HOME_BY_FEED = {
+  base:'living', white:'bedroom', green:'kids',   gold:'living',  frost:'bedroom',
+  kind:'living', dark:'bedroom',  cherry:'kids',  human:'living', sun:'living',
+  rainbow:'kids',fire:'kitchen',  sea:'kitchen',  storm:'kitchen',moon:'bedroom',
+  crystal:'living', choco:'kitchen', mushroom:'kids', flower:'kids'
+};
+var REL_PAIRS = {
+  'fire|frost':'enemy',
+  'kind|dark':'enemy',
+  'sun|moon':'love',
+  'cherry|flower':'love',
+  'gold|crystal':'rival',
+  'green|flower':'friend',
+  'green|mushroom':'friend',
+  'sea|storm':'friend',
+  'sea|flower':'friend',
+  'white|dark':'friend',
+  'sun|rainbow':'friend',
+  'human|kind':'friend',
+  'choco|mushroom':'friend',
+  'base|kind':'friend'
+};
+function relKey(a, b){ return a < b ? a + '|' + b : b + '|' + a; }
+function relOf(a, b){
+  if(!a || !b) return 'know';
+  if(a === b) return 'friend';
+  return REL_PAIRS[relKey(a, b)] || 'know';
+}
+var REL_META = {
+  love:  {icon:'💞', label:'Влюблены',  cls:'love'},
+  friend:{icon:'👫', label:'Друзья',    cls:'friend'},
+  rival: {icon:'🏆', label:'Соперники', cls:'rival'},
+  enemy: {icon:'⚔️', label:'Не ладят',  cls:'enemy'},
+  know:  {icon:'🤝', label:'Знакомые',  cls:'know'}
+};
+function petRelations(p){
+  var out = {love:[], friend:[], rival:[], enemy:[], know:[]};
+  (S.pets || []).forEach(function(o){
+    if(o.id === p.id) return;
+    var meta = PET_MAP[o.petId] || {emoji:'🐾'};
+    out[relOf(p.feed, o.feed)].push({id:o.id, name:o.name, emoji:meta.emoji});
+  });
+  return out;
+}
+function relHTML(p){
+  var rel = petRelations(p);
+  var rows = ['love','friend','rival','enemy','know'].map(function(k){
+    var m = REL_META[k], list = rel[k];
+    var body = list.length
+      ? list.map(function(o){ return '<span class="relChip">' + o.emoji + ' ' + esc(o.name) + '</span>'; }).join('')
+      : '<span class="relNone">пока никого</span>';
+    return '<div class="relLine ' + m.cls + '"><span class="relIc">' + m.icon + '</span>' +
+      '<span class="relLbl">' + m.label + '</span><span class="relList">' + body + '</span></div>';
+  }).join('');
+  var home = ROOMS[roomIndex(HOME_BY_FEED[p.feed] || 'living')] || ROOMS[0];
+  return '<div class="relBox">' +
+    '<div class="relLine home"><span class="relIc">🏠</span><span class="relLbl">Любимая комната</span>' +
+    '<span class="relList"><span class="relChip">' + home.name + '</span></span></div>' + rows + '</div>';
+}
+
 function petModal(id){
   var p = null;
   S.pets.forEach(function(x){ if(x.id === id) p = x; });
@@ -775,7 +992,7 @@ function petModal(id){
     '<div class="petBig">' + petSVG(p.petId, p.feed, 190, p.level, tracesOf(p)) + '</div>' +
     '<div class="meta" style="text-align:center">' + f.emoji + ' ' + f.name + ' · уровень ' + p.level + '</div>' +
     '<div class="traces">Накоплено: ' + tracesOf(p).map(function(x){ var q = FEED_MAP[x]; return q ? q.emoji : ''; }).join(' ') + '</div>' +
-    '<div class="actNote">Сейчас ' + act + '. ' + f.short + '.</div>' +
+    '<div class="actNote">🎯 Любит: ' + act + '.</div>' + relHTML(p) +
     '<h3 style="margin-top:16px">Покормить · ' + FEED_PRICE + ' 🌰</h3>' +
     '<div class="feedGrid">' + btns + '</div>' +
     '<div class="row" style="margin-top:14px"><input class="inp" id="petName" value="' + esc(p.name) + '" maxlength="20">' +
@@ -818,6 +1035,7 @@ function modal(html){
   m.hidden = false;
 }
 function closeModal(){
+  clearInterval(window._showTimer);
   document.getElementById('modal').hidden = true;
   document.getElementById('sheet').innerHTML = '';
 }
@@ -852,6 +1070,10 @@ document.addEventListener('click', function(e){
   if(t.closest('[data-close]')){ closeModal(); return; }
   if(t.closest('#editHouse')){ editMode = !editMode; render(); window.scrollTo(0,0); return; }
   if(t.closest('#camBack')){ zoomRoom = null; render(); window.scrollTo(0,0); return; }
+  if(t.closest('[data-stage]')){ showTheater(); return; }
+  if(t.closest('[data-goshop]')){ tab = 'shop'; zoomRoom = null; render(); return; }
+  var bldBtn = t.closest('[data-build]');
+  if(bldBtn){ buyRoom(bldBtn.getAttribute('data-build')); return; }
   var camEl = t.closest('.cam');
   if(camEl && zoomRoom == null && !editMode && !t.closest('.furn')){ zoomRoom = +camEl.getAttribute('data-room'); render(); window.scrollTo(0,0); return; }
   if(t.closest('#collectBtn')){ collectIncome(); return; }

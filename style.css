@@ -64,7 +64,7 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .sectbtns button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 4px;font-size:12px;font-weight:700;color:var(--muted)}
 .sectbtns button.on{background:var(--sand);color:var(--ink)}
 /* модалка */
-.modal{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.modal{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center}
 .modal[hidden]{display:none}
 .backdrop{position:absolute;inset:0;background:rgba(40,30,20,.42)}
 .sheet{position:relative;width:100%;max-width:560px;background:var(--card);border-radius:20px 20px 0 0;
@@ -76,7 +76,7 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .feedlist{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .feedlist .btn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;padding:9px 6px}
 .toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#3c2f22;color:#fff;
-  padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;z-index:80;opacity:0;transition:.25s;pointer-events:none}
+  padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;z-index:130;opacity:0;transition:.25s;pointer-events:none}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
 
 /* дом */
@@ -236,3 +236,38 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .housePet.scene-sleep .petBody{opacity:.92}
 .camScene{position:absolute;left:6px;right:6px;top:15px;text-align:center;font-size:8px;line-height:1.25;color:#eaf2ff;background:rgba(10,16,24,.55);border-radius:7px;padding:2px 4px;z-index:96;pointer-events:none;width:fit-content;margin:0 auto}
 .house.zoom .camScene{font-size:11px;padding:4px 9px;top:26px;left:12px;right:12px}
+
+
+/* карточка питомца: характер и отношения */
+.relBox{margin:12px 0 2px;padding:10px 11px;border-radius:13px;background:#fbf7ee;border:1px solid #eee2c9}
+.relLine{display:flex;align-items:flex-start;gap:6px;font-size:11.5px;line-height:1.45;padding:3px 0}
+.relLine + .relLine{border-top:1px dashed #eee2c9}
+.relIc{flex:0 0 16px;text-align:center}
+.relLbl{flex:0 0 auto;color:#7d7159;min-width:92px}
+.relList{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+.relChip{background:#fff;border:1px solid #eadfc8;border-radius:8px;padding:0 5px;font-size:11px;color:#4a4234}
+.relNone{opacity:.5}
+.relLine.love .relLbl{color:#c2457b}
+.relLine.friend .relLbl{color:#2f7a3a}
+.relLine.enemy .relLbl{color:#a3572f}
+.relLine.rival .relLbl{color:#8a6a10}
+
+/* ---------- здания: театр, библиотека, музей ---------- */
+.roomDeco{position:absolute;right:4%;top:24%;font-size:9cqw;line-height:1;opacity:.22;pointer-events:none;z-index:1;filter:saturate(.9)}
+.house.zoom .roomDeco{font-size:15cqw;opacity:.16}
+.roomAct{display:block;width:calc(100% - 12px);margin:6px;border:0;border-radius:12px;padding:12px;font-size:13.5px;font-weight:700;background:linear-gradient(135deg,#f0b25e,#e0913f);color:#3c2f22;box-shadow:0 3px 0 rgba(0,0,0,.18);cursor:pointer}
+.roomAct:active{transform:scale(.98)}
+.camSlot{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:1/0.84;border-radius:8px;border:2px dashed rgba(255,255,255,.18);color:rgba(255,255,255,.62);font-size:11px;line-height:1.3;text-align:center;cursor:pointer}
+.camSlot b{font-size:22px;font-weight:400;line-height:1}
+.camSlot:active{background:rgba(255,255,255,.05)}
+.bld.done{opacity:.7}
+.theaterCast{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 0 10px;font-size:12.5px;color:var(--muted)}
+.castPet{width:42px;display:inline-block}
+.castPet svg{display:block;width:100%;height:auto}
+.castNm{font-weight:600;color:var(--ink)}
+.castAmp{opacity:.6;font-size:11px}
+.stage{margin:6px 0 0;padding:12px;border-radius:14px;background:linear-gradient(#2b2136,#1d1726);color:#f4ecff;max-height:46dvh;overflow:auto;font-size:13.5px;line-height:1.5}
+.stage .showLine{display:flex;gap:7px;align-items:flex-start;margin-bottom:9px;animation:up .35s ease-out}
+.stage .showLine i{opacity:.75}
+.stage .showLine .castPet{width:30px;flex:0 0 30px}
+.stage .showLine b{color:#ffd9a0}
