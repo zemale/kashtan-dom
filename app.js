@@ -3,18 +3,29 @@
 var KEY = 'kashtan_v1';
 
 var FURNITURE = [
-  {id:'rug',    name:'Ковёр',        emoji:'🟧', price:40,  x:50, y:4,  size:34, z:1, desc:'Тёплый, мягкий'},
-  {id:'plant',  name:'Растение',     emoji:'🪴', price:50,  x:12, y:6,  size:30, z:3, desc:'Живое в доме'},
-  {id:'lamp',   name:'Торшер',       emoji:'💡', price:60,  x:88, y:8,  size:30, z:3, desc:'Свет по вечерам'},
-  {id:'shelf',  name:'Полка с книгами', emoji:'📚', price:70, x:78, y:44, size:28, z:2, desc:'Есть что почитать'},
-  {id:'pillow', name:'Подушка',      emoji:'🛋', price:45,  x:24, y:4,  size:26, z:2, desc:'Для ленивых вечеров'},
-  {id:'clock',  name:'Часы',         emoji:'🕰', price:65,  x:62, y:56, size:24, z:2, desc:'Тик-так'},
-  {id:'garland',name:'Гирлянда',     emoji:'✨', price:55,  x:50, y:78, size:26, z:2, desc:'Праздник каждый день'},
-  {id:'aqua',   name:'Аквариум',     emoji:'🐠', price:90,  x:16, y:46, size:28, z:2, desc:'Рыбки молчат'},
-  {id:'table',  name:'Стол',         emoji:'🪑', price:80,  x:66, y:5,  size:30, z:3, desc:'Рабочее место'},
-  {id:'piano',  name:'Пианино',      emoji:'🎹', price:120, x:88, y:5,  size:32, z:3, desc:'Для настроения'},
-  {id:'frame',  name:'Картина',      emoji:'🖼', price:60,  x:42, y:52, size:26, z:2, desc:'На стену'},
-  {id:'catbed', name:'Лежанка',      emoji:'🧺', price:75,  x:36, y:3,  size:26, z:2, desc:'Уютное гнездо'}
+  {id:'rug',    name:'Ковёр',           emoji:'🟧', price:40,  x:50, y:4,  size:34, z:1, room:'living',  desc:'Тёплый, мягкий'},
+  {id:'plant',  name:'Растение',        emoji:'🪴', price:50,  x:12, y:6,  size:30, z:3, room:'living',  desc:'Живое в доме'},
+  {id:'lamp',   name:'Торшер',          emoji:'💡', price:60,  x:88, y:8,  size:30, z:3, room:'bedroom', desc:'Свет по вечерам'},
+  {id:'shelf',  name:'Полка с книгами', emoji:'📚', price:70,  x:78, y:44, size:28, z:2, room:'living',  desc:'Есть что почитать'},
+  {id:'pillow', name:'Подушка',         emoji:'🛋', price:45,  x:24, y:4,  size:26, z:2, room:'bedroom', desc:'Для ленивых вечеров'},
+  {id:'clock',  name:'Часы',            emoji:'🕰', price:65,  x:62, y:56, size:24, z:2, room:'living',  desc:'Тик-так'},
+  {id:'garland',name:'Гирлянда',        emoji:'✨', price:55,  x:50, y:78, size:26, z:2, room:'kids',    desc:'Праздник каждый день'},
+  {id:'aqua',   name:'Аквариум',        emoji:'🐠', price:90,  x:16, y:46, size:28, z:2, room:'kids',    desc:'Рыбки молчат'},
+  {id:'table',  name:'Стол',            emoji:'🪑', price:80,  x:66, y:5,  size:30, z:3, room:'kitchen', desc:'Рабочее место'},
+  {id:'piano',  name:'Пианино',         emoji:'🎹', price:120, x:88, y:5,  size:32, z:3, room:'living',  desc:'Для настроения'},
+  {id:'frame',  name:'Картина',         emoji:'🖼', price:60,  x:42, y:52, size:26, z:2, room:'living',  desc:'На стену'},
+  {id:'catbed', name:'Лежанка',         emoji:'🧺', price:75,  x:36, y:3,  size:26, z:2, room:'bedroom', desc:'Уютное гнездо'},
+  {id:'sofa',   name:'Диван',           emoji:'🛋️', price:110, x:50, y:4,  size:38, z:3, room:'living',  desc:'Мягкое место для всех'},
+  {id:'tv',     name:'Телевизор',       emoji:'📺', price:150, x:78, y:8,  size:34, z:4, room:'living',  desc:'Вечерний сериал'},
+  {id:'ficus',  name:'Фикус',           emoji:'🌿', price:60,  x:22, y:44, size:32, z:3, room:'living',  desc:'Большой и зелёный'},
+  {id:'stove',  name:'Плита',           emoji:'🍳', price:130, x:20, y:6,  size:30, z:3, room:'kitchen', desc:'Что-нибудь вкусное'},
+  {id:'kettle', name:'Чайник',          emoji:'🫖', price:40,  x:62, y:8,  size:22, z:3, room:'kitchen', desc:'Чай на всех'},
+  {id:'bed',    name:'Кровать',         emoji:'🛏️', price:160, x:60, y:4,  size:40, z:2, room:'bedroom', desc:'Спать — это важно'},
+  {id:'mirror', name:'Зеркало',         emoji:'🪞', price:70,  x:30, y:50, size:26, z:2, room:'bedroom', desc:'Всё видно'},
+  {id:'toybox', name:'Коробка игрушек', emoji:'🧸', price:75,  x:70, y:4,  size:28, z:2, room:'kids',    desc:'Тут живёт плюшевый'},
+  {id:'cactus', name:'Кактус',          emoji:'🌵', price:35,  x:14, y:6,  size:24, z:3, room:'kids',    desc:'Колючий, но свой'},
+  {id:'guitar', name:'Гитара',          emoji:'🎸', price:100, x:82, y:5,  size:30, z:3, room:'kids',    desc:'Петь под неё'},
+  {id:'nighlight', name:'Ночник',       emoji:'🕯', price:45,  x:44, y:6,  size:22, z:3, room:'kids',    desc:'Не страшно в темноте'}
 ];
 var FURN_MAP = {};
 FURNITURE.forEach(function(f){ f.x0 = f.x; f.y0 = f.y; FURN_MAP[f.id] = f; });
@@ -153,6 +164,7 @@ function save(){
 
 var tab = 'home';
 var editMode = false;
+var zoomRoom = null;
 var ui = { adopt:null, adoptFeed:null, pet:null };
 
 /* ---------- утилиты ---------- */
@@ -214,27 +226,36 @@ function spreadX(x, used, gap){
   return Math.max(6, Math.min(94, x));
 }
 
-function camsHTML(){
+function roomIndex(id){
+  for(var i = 0; i < ROOMS.length; i++){ if(ROOMS[i].id === id) return i; }
+  return -1;
+}
+
+function camsHTML(only){
   var wSel = WALL_MAP[S.wall] || WALLS[0];
   var fSel = FLOOR_MAP[S.floor] || FLOORS[0];
   var customWall = S.wall !== 'cream';
   var customFloor = S.floor !== 'oak';
   var shift = Math.floor(Date.now() / 14000) % ROOMS.length;
-  var b = ['<div class="camGrid" id="camGrid">'];
+  var b = ['<div class="camGrid' + (only != null ? ' solo' : '') + '" id="camGrid">'];
   ROOMS.forEach(function(room, ri){
+    if(only != null && only !== ri) return;
     var w = customWall ? wSel : (WALL_MAP[room.wall] || wSel);
     var fl = customFloor ? fSel : (FLOOR_MAP[room.floor] || fSel);
     var st = '--wall1:' + w.a + ';--wall2:' + w.b + ';--floor1:' + fl.a + ';--floor2:' + fl.b + ';';
     b.push('<div class="cam" data-room="' + ri + '" style="' + st + '">');
     b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
     b.push('<div class="window"><div class="sky"></div><div class="frame"></div></div>');
+    if(only != null) b.push('<button class="camBack" id="camBack" title="Назад">🔙</button>');
     b.push('<div class="camBar"><i class="rec"></i><b>' + room.tag + '</b><span>' + esc(room.name).toUpperCase() + '</span><em>' + clockStr(ri * 2) + '</em></div>');
 
     S.furniture.forEach(function(it, i){
-      if(i % ROOMS.length !== ri) return;
       var f = FURN_MAP[it.id];
       if(!f) return;
-      b.push('<div class="furn" data-fid="' + it.id + '" data-room="' + ri + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + Math.round(f.size * 0.55) + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
+      var rr = roomIndex(f.room);
+      if(rr < 0) rr = i % ROOMS.length;
+      if(rr !== ri) return;
+      b.push('<div class="furn" data-fid="' + it.id + '" data-room="' + ri + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + Math.round(f.size * 0.55) + 'px;font-size:' + (f.size * 0.3).toFixed(1) + 'cqw;z-index:' + f.z + '">' + f.emoji + '</div>');
     });
 
     var mine = [];
@@ -264,8 +285,8 @@ function camsHTML(){
 }
 
 function houseHTML(){
-  var b = ['<div class="house' + (editMode ? ' edit' : '') + '" id="house">'];
-  b.push('<div id="camsWrap">' + camsHTML() + '</div>');
+  var b = ['<div class="house' + (editMode ? ' edit' : '') + (zoomRoom != null ? ' zoom' : '') + '" id="house">'];
+  b.push('<div id="camsWrap">' + camsHTML(zoomRoom) + '</div>');
   if(!S.pets.length){
     b.push('<div class="emptyHouse">Дом пустой — заведи первого питомца 🐾</div>');
   }
@@ -293,6 +314,7 @@ function screenHome(){
   S.habits.forEach(function(x){ totalStreak = Math.max(totalStreak, x.streak); });
   var b = [];
   b.push(houseHTML());
+  if(!editMode && zoomRoom == null && S.pets.length) b.push('<p class="hint camHint">Тыкни в комнату — откроется крупно, как с камеры 📹</p>');
   b.push('<div class="row" style="margin-bottom:10px"><button class="btn ' + (editMode ? 'primary' : '') + '" id="editHouse" style="flex:1;padding:12px">' +
     (editMode ? '✓ Готово' : '✏️ Обставить дом') + '</button></div>');
   if(editMode) b.push(editorHTML());
@@ -453,14 +475,19 @@ function habitModal(){
 
 /* ---------- магазин ---------- */
 function screenShop(){
-  var b = ['<h2>Магазин мебели</h2><p class="hint">Вещь сразу появляется в доме, а потом её можно переставить как угодно.</p>'];
-  FURNITURE.forEach(function(f){
-    var has = own(f.id);
-    b.push('<div class="card"><div class="item"><div class="ico">' + f.emoji + '</div>' +
-      '<div><div class="nm">' + esc(f.name) + '</div><div class="ds">' + esc(f.desc) + '</div></div>' +
-      '<div class="spacer"></div>' +
-      (has ? '<span class="pill good">В доме</span>' : '<button class="btn primary" data-buy="' + f.id + '">' + f.price + ' 🌰</button>') +
-      '</div></div>');
+  var b = ['<h2>Магазин мебели</h2><p class="hint">Вещь сразу появляется в своей комнате, а потом её можно переставить как угодно.</p>'];
+  ROOMS.forEach(function(room){
+    var list = FURNITURE.filter(function(f){ return f.room === room.id; });
+    if(!list.length) return;
+    b.push('<h3>' + esc(room.name) + '</h3>');
+    list.forEach(function(f){
+      var has = own(f.id);
+      b.push('<div class="card"><div class="item"><div class="ico">' + f.emoji + '</div>' +
+        '<div><div class="nm">' + esc(f.name) + '</div><div class="ds">' + esc(f.desc) + '</div></div>' +
+        '<div class="spacer"></div>' +
+        (has ? '<span class="pill good">В доме</span>' : '<button class="btn primary" data-buy="' + f.id + '">' + f.price + ' 🌰</button>') +
+        '</div></div>');
+    });
   });
   return b.join('');
 }
@@ -633,7 +660,7 @@ function render(){
     window._camTimer = setInterval(function(){
       var wrap = document.getElementById('camsWrap');
       if(!wrap) return;
-      wrap.innerHTML = camsHTML();
+      wrap.innerHTML = camsHTML(zoomRoom);
       bindHouseDrag();
     }, 14000);
   }
@@ -642,9 +669,12 @@ function render(){
 document.addEventListener('click', function(e){
   var t = e.target;
   var tabBtn = t.closest('#tabs button');
-  if(tabBtn){ tab = tabBtn.getAttribute('data-tab'); editMode = false; render(); window.scrollTo(0,0); return; }
+  if(tabBtn){ tab = tabBtn.getAttribute('data-tab'); editMode = false; zoomRoom = null; render(); window.scrollTo(0,0); return; }
   if(t.closest('[data-close]')){ closeModal(); return; }
   if(t.closest('#editHouse')){ editMode = !editMode; render(); window.scrollTo(0,0); return; }
+  if(t.closest('#camBack')){ zoomRoom = null; render(); window.scrollTo(0,0); return; }
+  var camEl = t.closest('.cam');
+  if(camEl && zoomRoom == null && !editMode && !t.closest('.furn')){ zoomRoom = +camEl.getAttribute('data-room'); render(); window.scrollTo(0,0); return; }
   var wb = t.closest('[data-wall]');
   if(wb){ S.wall = wb.getAttribute('data-wall'); save(); render(); return; }
   var fb = t.closest('[data-floor]');
