@@ -43,37 +43,37 @@ FLOORS.forEach(function(f){ FLOOR_MAP[f.id] = f; });
 /* чем занят питомец: x/y — место в доме, s — размер, a — анимация */
 var PET_ACTS = {
   cat:     {x:16, y:51, s:22, a:'window'},
-  dog:     {x:54, y:3,  s:26, a:'play', toy:'🎾'},
+  dog:     {x:54, y:3,  s:26, a:'play', props:[{e:'🎾', c:'front'}]},
   owl:     {x:79, y:47, s:20, a:'perch'},
-  dragon:  {x:70, y:63, s:22, a:'fly', toy:'✨'},
-  griffin: {x:87, y:58, s:20, a:'fly'},
-  swan:    {x:38, y:2,  s:24, a:'glide'},
-  snake:   {x:30, y:2,  s:22, a:'crawl'},
-  seal:    {x:24, y:2,  s:22, a:'nap'},
-  capy:    {x:46, y:3,  s:24, a:'nap'},
-  unicorn: {x:64, y:3,  s:24, a:'sparkle', toy:'✨'},
-  horse:   {x:76, y:3,  s:26, a:'walk'},
-  deer:    {x:86, y:3,  s:24, a:'walk'},
-  wolf:    {x:10, y:3,  s:24, a:'walk'},
-  lion:    {x:44, y:2,  s:26, a:'walk'},
-  fox:     {x:68, y:2,  s:22, a:'walk'}
+  dragon:  {x:70, y:63, s:22, a:'fly', props:[{e:'✨', c:'side'}]},
+  griffin: {x:87, y:58, s:20, a:'fly', props:[{e:'✨', c:'side'}]},
+  swan:    {x:38, y:3,  s:24, a:'preen', props:[{e:'🪶', c:'side'}]},
+  snake:   {x:30, y:2,  s:22, a:'coil', props:[{e:'☀️', c:'top'}]},
+  seal:    {x:24, y:2,  s:22, a:'balance', props:[{e:'🏐', c:'nose'}]},
+  capy:    {x:46, y:3,  s:24, a:'bath', props:[{e:'🛁', c:'tub'},{e:'🌿', c:'side'}]},
+  unicorn: {x:64, y:3,  s:24, a:'sparkle', props:[{e:'🌈', c:'side'}]},
+  horse:   {x:76, y:3,  s:26, a:'chew', props:[{e:'🌾', c:'front'}]},
+  deer:    {x:86, y:3,  s:24, a:'graze', props:[{e:'🌿', c:'front'}]},
+  wolf:    {x:10, y:3,  s:24, a:'chew', props:[{e:'🦴', c:'front'}]},
+  lion:    {x:44, y:2,  s:26, a:'pounce', props:[{e:'🧶', c:'side'}]},
+  fox:     {x:68, y:2,  s:22, a:'pounce', props:[{e:'🧦', c:'side'}]}
 };
 var ACT_TEXT = {
-  cat:'смотрит в окно на птичек, сидя на подоконнике',
-  dog:'играет с мячиком на полу',
-  owl:'сидит на полке и наблюдает за домом',
+  cat:'смотрит в окно на птичек, сидя на высоком подоконнике',
+  dog:'прыгает за мячиком на полу',
+  owl:'сидит на полке, разложив книжки, и наблюдает за домом',
   dragon:'парит под потолком и пускает искры',
-  griffin:'летает под потолком',
-  swan:'гуляет, плавно покачиваясь',
-  snake:'ползёт вдоль пола',
-  seal:'дремлет на тёплом полу',
-  capy:'дремлет в уютном углу',
-  unicorn:'сияет искрами',
-  horse:'расхаживает по комнате',
-  deer:'стоит у окна',
-  wolf:'ходит кругами',
-  lion:'лежит и поглядывает',
-  fox:'принюхивается к мебели'
+  griffin:'кружит под потолком, охраняя дом',
+  swan:'чистит пёрышки, сидя у стены',
+  snake:'свернулась клубком и греется на солнышке',
+  seal:'балансирует мячиком на носу',
+  capy:'сидит в тазике с водой и жуёт травинку',
+  unicorn:'сияет искрами и любуется радугой',
+  horse:'жуёт сено из кормушки',
+  deer:'общипывает листья с кустика',
+  wolf:'грызёт косточку в своём углу',
+  lion:'играет с клубком пряжи',
+  fox:'утащила носок и треплет его'
 };
 
 var MILESTONES = {3:30, 7:80, 14:180, 21:400};
@@ -180,14 +180,32 @@ function houseHTML(){
     b.push('<div class="furn" data-fid="' + it.id + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + f.size + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
   });
   var used = [];
+  var onFloor = 0;
+  S.pets.slice(0, 8).forEach(function(p){
+    var d = PET_ACTS[p.petId];
+    if(!d || d.y < 30) onFloor++;
+  });
+  var floorSeen = 0;
   S.pets.slice(0, 8).forEach(function(p, i){
     var d = PET_ACTS[p.petId] || {x:14 + i * 10, y:2, s:22, a:'walk'};
     if(p.petId === 'owl' && !own('shelf')) d = {x:20, y:2, s:20, a:'walk'};
-    var x = freeX(d.x, used);
-    used.push(x);
-    b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + d.y + '%;width:' + d.s + '%;z-index:' + (10 + i) + '">' +
-      '<div class="petBody">' + petSVG(p.petId, p.feed, 200, p.level) + '</div>' +
-      (d.toy ? '<span class="toy">' + d.toy + '</span>' : '') +
+    var x, y = d.y, sz = d.s;
+    if(d.y < 30){
+      var n = Math.max(onFloor, 1);
+      var idx = floorSeen++;
+      x = n === 1 ? 50 : 11 + idx * (78 / (n - 1));
+      var back = idx % 2 === 1;
+      y = back ? 15 : 1;
+      sz = back ? 16 : 19;
+    } else {
+      x = freeX(d.x, used);
+      used.push(x);
+    }
+    var props = (d.props || []).map(function(pr){
+      return '<span class="prop ' + pr.c + '">' + pr.e + '</span>';
+    }).join('');
+    b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + y + '%;width:' + sz + '%;z-index:' + (10 + i) + '">' +
+      '<div class="petBody">' + petSVG(p.petId, p.feed, 200, p.level) + '</div>' + props +
       (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
       '</div>');
   });
