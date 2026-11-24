@@ -272,3 +272,33 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .stage .showLine i{opacity:.75}
 .stage .showLine .castPet{width:30px;flex:0 0 30px}
 .stage .showLine b{color:#ffd9a0}
+
+/* ---------- погода и время суток ---------- */
+.window .sky{overflow:hidden}
+.window.ph-dawn .sky{background:linear-gradient(#f7c39a,#ffe4c4)}
+.window.ph-day .sky{background:linear-gradient(#a7d4f2,#e9f5fc)}
+.window.ph-dusk .sky{background:linear-gradient(#ee8f5e,#ffc98f)}
+.window.ph-night .sky{background:linear-gradient(#0d1730,#2a4570)}
+.window .sun{position:absolute;right:16%;top:12%;width:22%;padding-top:22%;border-radius:50%;background:#ffd75e;box-shadow:0 0 8px rgba(255,215,94,.85)}
+.window .sun.dawn{background:#ffb26b;box-shadow:0 0 8px rgba(255,178,107,.85);top:40%}
+.window .sun.dusk{background:#ff9a4d;top:46%}
+.window .moon{position:absolute;right:16%;top:10%;width:24%;padding-top:24%;border-radius:50%;background:#f3f0d8;box-shadow:inset -5px -3px 0 rgba(175,175,155,.5)}
+.window .star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.9;animation:twinkle 3s ease-in-out infinite}
+.window .s1{left:14%;top:18%}
+.window .s2{left:34%;top:38%;animation-delay:.7s}
+.window .s3{left:56%;top:14%;animation-delay:1.4s}
+.window .s4{left:20%;top:58%;animation-delay:2.1s}
+.window .s5{left:62%;top:54%;animation-delay:1s}
+@keyframes twinkle{0%,100%{opacity:.35}50%{opacity:1}}
+.window .cloud{position:absolute;background:rgba(255,255,255,.92);border-radius:999px}
+.window .cloud.ca{left:6%;top:24%;width:46%;height:15%}
+.window .cloud.cb{left:38%;top:44%;width:54%;height:17%;opacity:.85}
+.window .cloud.soft{top:16%;width:34%;height:11%;opacity:.55}
+.window.ph-night .cloud{background:rgba(150,170,205,.55)}
+.window .precip{position:absolute;inset:0;display:block}
+.window .precip.rain{background:repeating-linear-gradient(100deg,rgba(255,255,255,.7) 0 1px,transparent 1px 6px);animation:rainFall .6s linear infinite;opacity:.75}
+.window .precip.snow{background-image:radial-gradient(rgba(255,255,255,.95) 1px,transparent 1.5px);background-size:9px 11px;animation:snowFall 3.5s linear infinite;opacity:.95}
+@keyframes rainFall{from{background-position:0 0}to{background-position:-6px 18px}}
+@keyframes snowFall{from{background-position:0 0}to{background-position:4px 22px}}
+.dayBadge{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:-4px 0 10px}
+

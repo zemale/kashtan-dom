@@ -243,6 +243,56 @@ function clockStr(off){
   return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
 }
 
+var PHASES = {dawn:'Рассвет', day:'День', dusk:'Закат', night:'Ночь'};
+var WEATHERS = {clear:'Ясно', clouds:'Облачно', rain:'Дождь', snow:'Снег'};
+var PHASE_ICON = {dawn:'🌅', day:'☀️', dusk:'🌇', night:'🌙'};
+var WX_ICON = {clear:'✨', clouds:'☁️', rain:'🌧', snow:'❄️'};
+function nowHour(){
+  if(typeof window !== 'undefined' && window.__hour != null) return +window.__hour;
+  return new Date().getHours();
+}
+function dayPhase(h){
+  h = (h == null) ? nowHour() : h;
+  if(h >= 6 && h < 10) return 'dawn';
+  if(h >= 10 && h < 17) return 'day';
+  if(h >= 17 && h < 22) return 'dusk';
+  return 'night';
+}
+function isNight(){ return dayPhase() === 'night'; }
+function weatherToday(){
+  if(typeof window !== 'undefined' && window.__weather) return window.__weather;
+  var d = new Date();
+  var m = d.getMonth() + 1;
+  var seed = d.getDate() * 7 + m * 13;
+  var pool;
+  if(m === 12 || m <= 2) pool = ['snow','snow','snow','clouds','clouds','clear','rain'];
+  else if(m <= 5) pool = ['rain','rain','clouds','clouds','clear','clear','clear'];
+  else if(m <= 8) pool = ['clear','clear','clear','clear','clouds','clouds','rain'];
+  else pool = ['rain','rain','clouds','clouds','clouds','clear','snow'];
+  return pool[seed % pool.length];
+}
+function windowHTML(){
+  var ph = dayPhase(), wx = weatherToday();
+  var art = '';
+  if(ph === 'night'){
+    art += '<i class="moon"></i>';
+    for(var si = 1; si <= 5; si++) art += '<i class="star s' + si + '"></i>';
+  } else {
+    art += '<i class="sun' + (ph === 'dawn' ? ' dawn' : ph === 'dusk' ? ' dusk' : '') + '"></i>';
+    if(wx === 'clear' && ph === 'day') art += '<i class="cloud ca soft"></i>';
+  }
+  if(wx === 'clouds' || wx === 'rain' || wx === 'snow') art += '<i class="cloud ca"></i><i class="cloud cb"></i>';
+  if(wx === 'rain') art += '<i class="precip rain"></i>';
+  if(wx === 'snow') art += '<i class="precip snow"></i>';
+  return '<div class="window ph-' + ph + ' wx-' + wx + '" title="' + PHASES[ph] + ' · ' + WEATHERS[wx] + '">' +
+    '<div class="sky">' + art + '</div><div class="frame"></div></div>';
+}
+function dayBadgeHTML(){
+  var ph = dayPhase(), wx = weatherToday();
+  var extra = ph === 'night' ? ' · питомцы спят' : '';
+  return '<div class="dayBadge">' + PHASE_ICON[ph] + ' ' + PHASES[ph] + ' · ' + WX_ICON[wx] + ' ' + WEATHERS[wx] + extra + '</div>';
+}
+
 function spreadX(x, used, gap){
   x = Math.max(8, Math.min(92, x));
   for(var t = 0; t < 30; t++){
@@ -367,6 +417,10 @@ function buildScene(k, ri){
     bub(k.a, '✨'); sc.text = '🐲 вьётся вокруг торшера и пускает искры';
   } else if(k.kind === 'piano'){
     bub(k.a, '🎵'); prop(k.a, '🎶', 'top'); sc.text = '🎹 кто-то тренькает на пианино';
+  } else if(k.kind === 'nightsleep'){
+    bub(k.a, '💤'); cls(k.a, 'scene-sleep'); sc.text = '🌙 ночь — все спят, кто-то тихо сопит';
+  } else if(k.kind === 'night'){
+    bub(k.a, '🌙'); sc.text = '🌙 ночной житель не спит — гуляет по тёмному дому';
   } else if(k.kind === 'sleep'){
     bub(k.a, '💤'); cls(k.a, 'scene-sleep'); sc.text = 'дрыхнет без задних лап';
   } else if(k.kind === 'crawl'){
@@ -381,6 +435,16 @@ function buildScene(k, ri){
   return sc;
 }
 function pickScene(list, ri, seed){
+  if(isNight()){
+    var sleeper = null, noct = null;
+    list.forEach(function(pi){
+      var pid = S.pets[pi].petId;
+      if(pid === 'owl' || pid === 'bat' || pid === 'cat'){ if(noct == null) noct = pi; }
+      else if(sleeper == null) sleeper = pi;
+    });
+    if(sleeper != null) return buildScene({kind:'nightsleep', a:sleeper}, ri);
+    if(noct != null) return buildScene({kind:'night', a:noct}, ri);
+  }
   var cands = [];
   var pair;
   pair = findPair(list, function(p){ return tracesHas(p, ['fire']); }, function(p){ return tracesHas(p, ['frost']); });
@@ -448,7 +512,7 @@ function camsHTML(only){
     var st = '--wall1:' + w.a + ';--wall2:' + w.b + ';--floor1:' + fl.a + ';--floor2:' + fl.b + ';';
     b.push('<div class="cam" data-room="' + ri + '" style="' + st + '">');
     b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
-    b.push('<div class="window"><div class="sky"></div><div class="frame"></div></div>');
+    b.push(windowHTML());
     if(room.deco) b.push('<div class="roomDeco">' + room.deco + '</div>');
     if(only != null) b.push('<button class="camBack" id="camBack" title="Назад">🔙</button>');
     b.push('<div class="camBar"><i class="rec"></i><b>' + room.tag + '</b><span>' + esc(room.name).toUpperCase() + '</span><em>' + clockStr(ri * 2) + '</em></div>');
@@ -534,6 +598,7 @@ function screenHome(){
   S.habits.forEach(function(x){ totalStreak = Math.max(totalStreak, x.streak); });
   var b = [];
   b.push(houseHTML());
+  if(!editMode && zoomRoom == null) b.push(dayBadgeHTML());
   if(!editMode && zoomRoom == null) b.push(incomeHTML());
   if(!editMode && zoomRoom == null && S.pets.length) b.push('<p class="hint camHint">Тыкни в комнату — откроется крупно, как с камеры 📹</p>');
   b.push('<div class="row" style="margin-bottom:10px"><button class="btn ' + (editMode ? 'primary' : '') + '" id="editHouse" style="flex:1;padding:12px">' +
