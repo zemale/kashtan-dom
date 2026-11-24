@@ -280,21 +280,26 @@ const OVER = {
   }
 };
 
-function petSVG(petId, feed, size, level){
+function petSVG(petId, feed, size, level, traces){
   var pet = PET_MAP[petId] || PETS[0];
   var c = palette(feed, pet);
   var n = Math.max(1, Math.min(level || 1, 8));
   var k = 0.9 + (n - 1) * 0.012;
-  var human = feed === 'human';
+  /* Следы прошлых кормов: тело берёт цвет последнего, а детали копятся. */
+  var list = (traces && traces.length) ? traces.slice() : (feed ? [feed] : []);
+  if(feed && list.indexOf(feed) < 0) list.push(feed);
+  var seen = {}, marks = [];
+  list.forEach(function(f){ if(f && !seen[f]){ seen[f] = 1; marks.push(f); } });
+  var human = !!seen.human;
   var lift = human ? -3 : 0;
   var style = '--fur:' + c.fur + ';--fur2:' + c.fur2 + ';--eye:' + c.eye + ';';
-  if (feed === 'gold') style += 'filter:drop-shadow(0 0 6px rgba(255,205,90,.9));';
+  if (seen.gold) style += 'filter:drop-shadow(0 0 6px rgba(255,205,90,.9));';
   var s = '<svg viewBox="0 0 100 100" width="' + size + '" height="' + size + '" style="' + style + '">';
   s += '<ellipse cx="50" cy="93" rx="19" ry="3.4" fill="rgba(0,0,0,.09)"/>';
   s += '<g transform="translate(50 92) scale(' + k.toFixed(3) + ') translate(-50 -92)">';
-  s += (OVER.back[feed] || '');
+  marks.forEach(function(f){ s += (OVER.back[f] || ''); });
   s += '<g transform="translate(0 ' + lift + ')">' + ART[pet.id] + '</g>';
-  s += (OVER.front[feed] || '');
+  marks.forEach(function(f){ s += (OVER.front[f] || ''); });
   s += '</g></svg>';
   return s;
 }
