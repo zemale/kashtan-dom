@@ -200,36 +200,55 @@ function houseHTML(){
     if(!f) return;
     b.push('<div class="furn" data-fid="' + it.id + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + f.size + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
   });
-  var used = [];
-  var onFloor = 0;
-  S.pets.slice(0, 8).forEach(function(p){
-    var d = PET_ACTS[p.petId];
-    if(!d || d.y < 30) onFloor++;
-  });
-  var floorSeen = 0;
-  S.pets.slice(0, 8).forEach(function(p, i){
-    var d = PET_ACTS[p.petId] || {x:14 + i * 10, y:2, s:22, a:'walk'};
+  var MAX_HOUSE = 12;
+  var housePets = S.pets.slice(0, MAX_HOUSE);
+  var floorList = [], wallList = [];
+  housePets.forEach(function(p){
+    var d = PET_ACTS[p.petId] || {x:50, y:2, s:22, a:'walk'};
     if(p.petId === 'owl' && !own('shelf')) d = {x:20, y:2, s:20, a:'walk'};
-    var x, y = d.y, sz = d.s;
-    if(d.y < 30){
-      var n = Math.max(onFloor, 1);
-      var idx = floorSeen++;
-      x = n === 1 ? 50 : 11 + idx * (78 / (n - 1));
-      var back = idx % 2 === 1;
-      y = back ? 15 : 1;
-      sz = back ? 16 : 19;
-    } else {
-      x = freeX(d.x, used);
-      used.push(x);
-    }
+    (d.y < 30 ? floorList : wallList).push({p:p, d:d});
+  });
+  var items = [];
+  var fN = floorList.length;
+  var fRows = 1, fCols = Math.max(1, fN), fsz = 19;
+  for(var cc = Math.max(1, fN); cc >= 1; cc--){
+    var rr = Math.ceil(fN / cc);
+    var ss = Math.min(19, 88 / cc);
+    if(rr * (ss * 1.6 + 1.5) <= 40){ fRows = rr; fCols = cc; fsz = ss; break; }
+  }
+  var rowStep = fsz * 1.6 + 1.5;
+  floorList.forEach(function(it, i){
+    var row = Math.floor(i / fCols);
+    var col = i % fCols;
+    it.x = (col + 0.5) * 100 / fCols;
+    it.y = 1 + row * rowStep;
+    it.s = fsz;
+    it.z = 20 + i;
+    items.push(it);
+  });
+  var wN = wallList.length;
+  var wsz = Math.min(22, 88 / Math.max(1, wN));
+  wallList.forEach(function(it, i){
+    it.x = wN === 1 ? Math.max(wsz / 2 + 3, Math.min(97 - wsz / 2, it.d.x)) : (i + 0.5) * 100 / wN;
+    it.y = Math.max(26, Math.min(74, it.d.y));
+    it.s = Math.min(it.d.s || 20, wsz);
+    it.z = 40 + i;
+    items.push(it);
+  });
+  items.forEach(function(it){
+    var p = it.p, d = it.d, sz = it.s;
+    var x = Math.max(sz / 2 + 2, Math.min(98 - sz / 2, it.x));
     var props = (d.props || []).map(function(pr){
       return '<span class="prop ' + pr.c + '">' + pr.e + '</span>';
     }).join('');
-    b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + y + '%;width:' + sz + '%;z-index:' + (10 + i) + '">' +
+    b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + it.y + '%;width:' + sz + '%;z-index:' + it.z + '">' +
       '<div class="petBody">' + petSVG(p.petId, p.feed, 200, p.level, tracesOf(p)) + '</div>' + props +
       (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
       '</div>');
   });
+  if(S.pets.length > MAX_HOUSE){
+    b.push('<div class="morePets">+' + (S.pets.length - MAX_HOUSE) + ' ещё в домике</div>');
+  }
   if(!S.pets.length){
     b.push('<div class="emptyHouse">Дом пустой — заведи первого питомца 🐾</div>');
   }
