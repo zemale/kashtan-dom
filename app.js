@@ -133,7 +133,7 @@ function defaultState(){
       {id:uid(), title:'Зарядка утром', kind:'good', streak:0, best:0, last:null, frozen:false, days:{}},
       {id:uid(), title:'Не залипать в телефоне перед сном', kind:'bad', streak:0, best:0, last:null, frozen:false, days:{}}
     ],
-    pets: [], furniture: [], log: []
+    pets: [], furniture: [], log: [], lastCollect: null
   };
 }
 
@@ -146,6 +146,7 @@ function load(){
   if(!S || !S.habits){ S = defaultState(); save(); }
   if(!S.pets) S.pets = [];
   if(!S.log) S.log = [];
+  if(S.lastCollect === undefined) S.lastCollect = null;
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -231,12 +232,181 @@ function roomIndex(id){
   return -1;
 }
 
+/* ---------- настроение и доход дома ---------- */
+function moodInfo(){
+  var needs = [
+    {label:'питомцы',  have:S.pets.length,           need:5},
+    {label:'вещи',     have:S.furniture.length,      need:5},
+    {label:'привычки', have:(S.habits || []).length,  need:5}
+  ];
+  var met = 0;
+  needs.forEach(function(n){ if(n.have >= n.need) met++; });
+  return {needs:needs, met:met, happy:met >= 2};
+}
+function incomeHTML(){
+  if(!S.pets.length) return '';
+  var m = moodInfo();
+  var per = m.happy ? 10 : 5;
+  var total = S.pets.length * per;
+  var done = S.lastCollect === todayStr();
+  var need = m.needs.map(function(n){
+    var ok = n.have >= n.need;
+    return '<span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✅' : '❌') + ' ' + n.label + ' ' + n.have + '/' + n.need + '</span>';
+  }).join('');
+  var b = ['<div class="income' + (m.happy ? ' happy' : '') + '">'];
+  b.push('<div style="flex:1;min-width:0"><b>' + (m.happy ? 'Питомцы счастливы 🐾' : 'Питомцы скучают 🐾') + '</b>' +
+    '<div class="incomeTxt">' + per + '🌰 за питомца · условий выполнено ' + m.met + ' из 3</div>' +
+    '<div class="need">' + need + '</div></div>');
+  b.push('<button class="btn ' + (done ? '' : 'primary') + '" id="collectBtn"' + (done ? ' disabled' : '') +
+    ' style="padding:10px 12px;white-space:nowrap">' + (done ? 'Собрано ✓' : 'Собрать +' + total + ' 🌰') + '</button>');
+  b.push('</div>');
+  return b.join('');
+}
+function collectIncome(){
+  if(!S.pets.length){ toast('Сначала заведи питомца'); return; }
+  if(S.lastCollect === todayStr()){ toast('Сегодня уже собрано — приходи завтра'); return; }
+  var m = moodInfo();
+  var per = m.happy ? 10 : 5;
+  var total = S.pets.length * per;
+  S.coins += total;
+  S.lastCollect = todayStr();
+  save(); render();
+  toast('+' + total + ' 🌰 ' + (m.happy ? 'от счастливых питомцев' : 'от питомцев'));
+}
+
+/* ---------- сцены: питомцы и предметы ---------- */
+var SCENE_MS = 9000;
+var PLANTS = ['green', 'flower', 'cherry'];
+var GROWERS = ['sea', 'sun', 'rainbow'];
+var HUNTERS = ['cat', 'wolf'];
+var PREY = ['owl', 'peacock', 'hamster', 'deer'];
+var FASTPETS = {frog:1, fox:1, hamster:1, otter:1, penguin:1, bat:1};
+
+function tracesHas(pp, ids){
+  var tr = tracesOf(pp);
+  for(var i = 0; i < ids.length; i++){ if(tr.indexOf(ids[i]) >= 0) return true; }
+  return false;
+}
+function findPair(list, okA, okB){
+  for(var i = 0; i < list.length; i++){
+    for(var j = 0; j < list.length; j++){
+      if(i === j) continue;
+      if(okA(S.pets[list[i]]) && okB(S.pets[list[j]])) return [list[i], list[j]];
+    }
+  }
+  return null;
+}
+function buildScene(k, ri){
+  var sc = {text:'', bubbles:{}, props:{}, cls:{}, moved:{}, movePi:null, moveRoom:null};
+  function bub(pi, e){ sc.bubbles[pi] = e; }
+  function prop(pi, e, c){ if(!sc.props[pi]) sc.props[pi] = []; sc.props[pi].push({e:e, c:c || 'side'}); }
+  function cls(pi, c){ sc.cls[pi] = c; }
+  if(k.kind === 'fight'){
+    bub(k.a, '💢'); bub(k.b, '💥');
+    prop(k.a, '🔥', 'side'); prop(k.b, '❄️', 'side');
+    cls(k.a, 'scene-fight'); cls(k.b, 'scene-fight');
+    sc.text = '🔥 против ❄️ — искры и пар, но всё понарошку';
+  } else if(k.kind === 'chase'){
+    bub(k.a, '🐾'); bub(k.b, '💨');
+    cls(k.b, 'scene-flee');
+    sc.moved[k.b] = (ri + 1) % ROOMS.length;
+    sc.movePi = k.b; sc.moveRoom = (ri + 1) % ROOMS.length;
+    sc.text = '🐶 гоняет 🐱 — кошка удирает в другую комнату';
+  } else if(k.kind === 'talk'){
+    bub(k.a, '❤️'); bub(k.b, '🌸');
+    sc.text = '🌿 и 🌺 мило беседуют';
+  } else if(k.kind === 'grow'){
+    bub(k.a, '💧'); bub(k.b, '🌱');
+    prop(k.b, '🌿', 'big'); prop(k.b, '🌺', 'big');
+    cls(k.b, 'scene-grow');
+    sc.text = '🌊 поливает — растения на питомце растут на глазах';
+  } else if(k.kind === 'hunt'){
+    bub(k.a, '👀'); bub(k.b, '💨');
+    prop(k.a, '🐾', 'side');
+    cls(k.b, 'scene-flee');
+    sc.text = 'охота понарошку — все целы и невредимы';
+  } else if(k.kind === 'ball'){
+    bub(k.a, '🎾'); sc.text = '🐶 гоняет мяч по ковру';
+  } else if(k.kind === 'scratch'){
+    bub(k.a, '🐾'); sc.text = '🐱 точит когти о диван';
+  } else if(k.kind === 'window'){
+    bub(k.a, '🐦'); sc.text = '🐱 смотрит в окно на птичек';
+  } else if(k.kind === 'books'){
+    bub(k.a, '📖'); sc.text = '🦉 сидит на полке и читает книжки';
+  } else if(k.kind === 'lampdance'){
+    bub(k.a, '✨'); sc.text = '🐲 вьётся вокруг торшера и пускает искры';
+  } else if(k.kind === 'piano'){
+    bub(k.a, '🎵'); prop(k.a, '🎶', 'top'); sc.text = '🎹 кто-то тренькает на пианино';
+  } else if(k.kind === 'sleep'){
+    bub(k.a, '💤'); cls(k.a, 'scene-sleep'); sc.text = 'дрыхнет без задних лап';
+  } else if(k.kind === 'crawl'){
+    bub(k.a, '🥬'); sc.text = '🐢 медленно ползёт к миске';
+  } else if(k.kind === 'circle'){
+    bub(k.a, '💨'); sc.text = 'носится кругами вокруг черепахи';
+  } else if(k.kind === 'play'){
+    bub(k.a, '❤️'); bub(k.b, '✨'); sc.text = 'догонялки, потом сидят рядом';
+  } else {
+    bub(k.a, '💭'); sc.text = 'гуляет по дому и присматривается';
+  }
+  return sc;
+}
+function pickScene(list, ri, seed){
+  var cands = [];
+  var pair;
+  pair = findPair(list, function(p){ return tracesHas(p, ['fire']); }, function(p){ return tracesHas(p, ['frost']); });
+  if(pair) cands.push({kind:'fight', a:pair[0], b:pair[1]});
+  pair = findPair(list, function(p){ return p.petId === 'dog'; }, function(p){ return p.petId === 'cat'; });
+  if(pair) cands.push({kind:'chase', a:pair[0], b:pair[1]});
+  pair = findPair(list, function(p){ return tracesHas(p, ['green']); }, function(p){ return tracesHas(p, ['flower']); });
+  if(pair) cands.push({kind:'talk', a:pair[0], b:pair[1]});
+  pair = findPair(list, function(p){ return tracesHas(p, GROWERS); }, function(p){ return tracesHas(p, PLANTS); });
+  if(pair) cands.push({kind:'grow', a:pair[0], b:pair[1]});
+  pair = findPair(list, function(p){ return HUNTERS.indexOf(p.petId) >= 0; }, function(p){ return PREY.indexOf(p.petId) >= 0; });
+  if(pair) cands.push({kind:'hunt', a:pair[0], b:pair[1]});
+  var hasTurtle = false;
+  list.forEach(function(pi){ if(S.pets[pi].petId === 'turtle') hasTurtle = true; });
+  list.forEach(function(pi){
+    var pp = S.pets[pi];
+    if(pp.petId === 'dog' && (own('rug') || own('toybox'))) cands.push({kind:'ball', a:pi});
+    if(pp.petId === 'cat' && own('sofa')) cands.push({kind:'scratch', a:pi});
+    if(pp.petId === 'cat' && !own('sofa')) cands.push({kind:'window', a:pi});
+    if(pp.petId === 'owl' && own('shelf')) cands.push({kind:'books', a:pi});
+    if(pp.petId === 'dragon' && own('lamp')) cands.push({kind:'lampdance', a:pi});
+    if(own('piano') && (pp.petId === 'cat' || pp.petId === 'fox' || pp.petId === 'hamster')) cands.push({kind:'piano', a:pi});
+    if((own('bed') || own('pillow')) && (pp.petId === 'cat' || pp.petId === 'koala')) cands.push({kind:'sleep', a:pi});
+    if(pp.petId === 'turtle') cands.push({kind:'crawl', a:pi});
+    if(hasTurtle && FASTPETS[pp.petId]) cands.push({kind:'circle', a:pi});
+  });
+  if(list.length >= 2) cands.push({kind:'play', a:list[0], b:list[1]});
+  if(!cands.length) cands.push({kind:'solo', a:list[0]});
+  return buildScene(cands[(seed + ri * 3) % cands.length], ri);
+}
+function scenePlan(){
+  var shift = Math.floor(Date.now() / 14000) % ROOMS.length;
+  var seed = Math.floor(Date.now() / SCENE_MS);
+  var assign = {}, rooms = [[], [], [], []];
+  S.pets.forEach(function(pp, pi){
+    var r = (pi + shift) % ROOMS.length;
+    assign[pi] = r; rooms[r].push(pi);
+  });
+  var scenes = [null, null, null, null];
+  var flee = {};
+  ROOMS.forEach(function(room, ri){
+    var list = rooms[ri].filter(function(pi){ return assign[pi] === ri; });
+    if(!list.length) return;
+    var sc = pickScene(list, ri, seed);
+    scenes[ri] = sc;
+    if(sc.movePi != null && sc.moveRoom != null){ assign[sc.movePi] = sc.moveRoom; flee[sc.movePi] = true; }
+  });
+  return {assign:assign, scenes:scenes, flee:flee};
+}
+
 function camsHTML(only){
   var wSel = WALL_MAP[S.wall] || WALLS[0];
   var fSel = FLOOR_MAP[S.floor] || FLOORS[0];
   var customWall = S.wall !== 'cream';
   var customFloor = S.floor !== 'oak';
-  var shift = Math.floor(Date.now() / 14000) % ROOMS.length;
+  var plan = scenePlan();
   var b = ['<div class="camGrid' + (only != null ? ' solo' : '') + '" id="camGrid">'];
   ROOMS.forEach(function(room, ri){
     if(only != null && only !== ri) return;
@@ -259,24 +429,32 @@ function camsHTML(only){
     });
 
     var mine = [];
-    S.pets.forEach(function(pp, pi){ if((pi + shift) % ROOMS.length === ri) mine.push(pp); });
+    S.pets.forEach(function(pp, pi){ if(plan.assign[pi] === ri) mine.push(pi); });
     var used = [];
-    mine.forEach(function(pp, k){
+    var sc = plan.scenes[ri];
+    mine.forEach(function(pi, k){
+      var pp = S.pets[pi];
       var d = PET_ACTS[pp.petId] || {x:50, y:2, s:22, a:'walk'};
       if(pp.petId === 'owl' && !own('shelf')) d = {x:20, y:2, s:20, a:'walk'};
       var sz = d.s || 22;
       if(mine.length > 3) sz = Math.min(sz, 86 / mine.length);
       var x = spreadX(d.x, used, Math.max(14, sz + 5));
       var y = Math.max(2, Math.min(78, d.y));
-      var props = (d.props || []).map(function(pr){
+      var props = (d.props || []).slice();
+      if(sc && sc.props[pi]) props = props.concat(sc.props[pi]);
+      if(plan.flee[pi]) props.push({e:'💨', c:'side'});
+      var propsHTML = props.map(function(pr){
         return '<span class="prop ' + pr.c + '">' + pr.e + '</span>';
       }).join('');
-      b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + y + '%;width:' + sz + '%;z-index:' + (20 + k) + '">' +
-        '<div class="petBody">' + petSVG(pp.petId, pp.feed, 200, pp.level, tracesOf(pp)) + '</div>' + props +
+      var bub = (sc && sc.bubbles[pi]) ? '<span class="pbub">' + sc.bubbles[pi] + '</span>' : '';
+      var cls = (sc && sc.cls[pi]) ? ' ' + sc.cls[pi] : '';
+      b.push('<div class="housePet act-' + d.a + cls + '" style="left:' + x + '%;bottom:' + y + '%;width:' + sz + '%;z-index:' + (20 + k) + '">' + bub +
+        '<div class="petBody">' + petSVG(pp.petId, pp.feed, 200, pp.level, tracesOf(pp)) + '</div>' + propsHTML +
         (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
         '</div>');
     });
     if(!mine.length) b.push('<div class="camEmpty">тут пока тихо…</div>');
+    if(sc && sc.text) b.push('<div class="camScene">' + sc.text + '</div>');
     b.push('<div class="camEdge"></div>');
     b.push('</div>');
   });
@@ -314,6 +492,7 @@ function screenHome(){
   S.habits.forEach(function(x){ totalStreak = Math.max(totalStreak, x.streak); });
   var b = [];
   b.push(houseHTML());
+  if(!editMode && zoomRoom == null) b.push(incomeHTML());
   if(!editMode && zoomRoom == null && S.pets.length) b.push('<p class="hint camHint">Тыкни в комнату — откроется крупно, как с камеры 📹</p>');
   b.push('<div class="row" style="margin-bottom:10px"><button class="btn ' + (editMode ? 'primary' : '') + '" id="editHouse" style="flex:1;padding:12px">' +
     (editMode ? '✓ Готово' : '✏️ Обставить дом') + '</button></div>');
@@ -662,7 +841,7 @@ function render(){
       if(!wrap) return;
       wrap.innerHTML = camsHTML(zoomRoom);
       bindHouseDrag();
-    }, 14000);
+    }, 9000);
   }
 }
 
@@ -675,6 +854,7 @@ document.addEventListener('click', function(e){
   if(t.closest('#camBack')){ zoomRoom = null; render(); window.scrollTo(0,0); return; }
   var camEl = t.closest('.cam');
   if(camEl && zoomRoom == null && !editMode && !t.closest('.furn')){ zoomRoom = +camEl.getAttribute('data-room'); render(); window.scrollTo(0,0); return; }
+  if(t.closest('#collectBtn')){ collectIncome(); return; }
   var wb = t.closest('[data-wall]');
   if(wb){ S.wall = wb.getAttribute('data-wall'); save(); render(); return; }
   var fb = t.closest('[data-floor]');

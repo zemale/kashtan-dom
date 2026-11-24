@@ -212,3 +212,27 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .house.zoom .camEmpty{font-size:12px}
 .house.zoom .camEdge{box-shadow:inset 0 0 34px rgba(0,0,0,.34),inset 0 0 0 1px rgba(255,255,255,.08)}
 .camHint{margin:-4px 0 12px;text-align:center}
+
+/* ---------- доход дома ---------- */
+.income{display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px;border-radius:14px;background:linear-gradient(135deg,#fff8e6,#ffeec4);border:1px solid #f0dca6}
+.income.happy{background:linear-gradient(135deg,#fff3cf,#ffdf9e);border-color:#e8c26e;box-shadow:0 2px 10px rgba(232,194,110,.35)}
+.income b{font-size:14px;line-height:1.2}
+.incomeTxt{font-size:11px;opacity:.8;margin-top:3px}
+.income .need{display:flex;gap:8px;flex-wrap:wrap;font-size:10.5px;margin-top:5px}
+.income .need span.ok{color:#2f7a3a}
+.income .need span.no{color:#a3572f}
+.income .btn:disabled{opacity:.55}
+
+/* ---------- сцены питомцев ---------- */
+.housePet .pbub{position:absolute;left:50%;top:-26%;transform:translateX(-50%);font-size:12px;line-height:1;padding:2px 4px;border-radius:9px;background:rgba(255,255,255,.92);box-shadow:0 1px 3px rgba(0,0,0,.22);z-index:6;animation:pbFloat 2.2s ease-in-out infinite}
+@keyframes pbFloat{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
+.housePet .prop.big{font-size:24px;right:-28%;bottom:4%;z-index:5;animation:propFloat 2.6s ease-in-out infinite}
+.housePet.scene-fight .petBody{animation:fightShake .45s ease-in-out infinite}
+@keyframes fightShake{0%,100%{transform:translate(0,0) rotate(0)}25%{transform:translate(-2px,0) rotate(-4deg)}75%{transform:translate(2px,0) rotate(4deg)}}
+.housePet.scene-flee .petBody{animation:fleeRun .55s ease-in-out infinite}
+@keyframes fleeRun{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+.housePet.scene-grow .prop.big{animation:growPulse 1.5s ease-in-out infinite}
+@keyframes growPulse{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.3) rotate(6deg)}}
+.housePet.scene-sleep .petBody{opacity:.92}
+.camScene{position:absolute;left:6px;right:6px;top:15px;text-align:center;font-size:8px;line-height:1.25;color:#eaf2ff;background:rgba(10,16,24,.55);border-radius:7px;padding:2px 4px;z-index:96;pointer-events:none;width:fit-content;margin:0 auto}
+.house.zoom .camScene{font-size:11px;padding:4px 9px;top:26px;left:12px;right:12px}
