@@ -51,6 +51,17 @@ var WALL_MAP = {}, FLOOR_MAP = {};
 WALLS.forEach(function(w){ WALL_MAP[w.id] = w; });
 FLOORS.forEach(function(f){ FLOOR_MAP[f.id] = f; });
 
+var WALLPAPERS = [
+  {id:'dots',    name:'Горошек',   price:35, desc:'мелкий аккуратный горошек'},
+  {id:'stripes', name:'Полоски',   price:45, desc:'вертикальные полосы'},
+  {id:'check',   name:'Клетка',    price:55, desc:'клетчатые стены, как в школе'},
+  {id:'brick',   name:'Кирпич',    price:65, desc:'тёплая кирпичная кладка'},
+  {id:'diag',    name:'Диагональ', price:75, desc:'косые полосы наискосок'},
+  {id:'stars',   name:'Звёзды',    price:95, desc:'звёздное небо на стенах'}
+];
+var WALLPAPER_MAP = {};
+WALLPAPERS.forEach(function(w){ WALLPAPER_MAP[w.id] = w; });
+
 /* чем занят питомец: x/y — место в доме, s — размер, a — анимация */
 var PET_ACTS = {
   cat:     {x:16, y:51, s:22, a:'window'},
@@ -137,7 +148,7 @@ function defaultState(){
     built: [], lastShow: null,
     garden: [null, null, null, null], tree: {watered: null, grown: 0},
     seeds: {grass: 2, carrot: 1, sun: 0, berry: 0},
-    accs: []
+    accs: [], wallpapers: [], pat: null
   };
 }
 
@@ -160,6 +171,8 @@ function load(){
   SEEDS.forEach(function(s){ if(S.seeds[s.id] === undefined) S.seeds[s.id] = 0; });
   if(!S.accs) S.accs = [];
   (S.pets || []).forEach(function(p){ if(!p.acc) p.acc = {}; });
+  if(!S.wallpapers) S.wallpapers = [];
+  if(S.pat && (!WALLPAPER_MAP[S.pat] || S.wallpapers.indexOf(S.pat) < 0)) S.pat = null;
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -512,6 +525,7 @@ function camsHTML(only){
   var fSel = FLOOR_MAP[S.floor] || FLOORS[0];
   var customWall = S.wall !== 'cream';
   var customFloor = S.floor !== 'oak';
+  var pat = (S.pat && WALLPAPER_MAP[S.pat]) ? ' pat-' + S.pat : '';
   var plan = scenePlan();
   var after = '';
   var b = ['<div class="camGrid' + (only != null ? ' solo' : '') + '" id="camGrid">'];
@@ -521,7 +535,7 @@ function camsHTML(only){
     var fl = customFloor ? fSel : (FLOOR_MAP[room.floor] || fSel);
     var st = '--wall1:' + w.a + ';--wall2:' + w.b + ';--floor1:' + fl.a + ';--floor2:' + fl.b + ';';
     b.push('<div class="cam" data-room="' + ri + '" style="' + st + '">');
-    b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
+    b.push('<div class="wall' + pat + '"></div><div class="floor"></div><div class="skirt"></div>');
     b.push(windowHTML());
     if(room.deco) b.push('<div class="roomDeco">' + room.deco + '</div>');
     if(only != null) b.push('<button class="camBack" id="camBack" title="Назад">🔙</button>');
@@ -595,10 +609,17 @@ function editorHTML(){
   var sf = FLOORS.map(function(c){
     return '<button class="swatch' + (S.floor === c.id ? ' on' : '') + '" data-floor="' + c.id + '" title="' + c.name + '" style="--a:' + c.a + ';--b:' + c.b + '"></button>';
   }).join('');
+  var mine = WALLPAPERS.filter(function(w){ return S.wallpapers.indexOf(w.id) >= 0; });
+  var sp = '<button class="swatch patSw' + (S.pat ? '' : ' on') + '" data-pat="none" title="Без узора">✖</button>' +
+    mine.map(function(w){
+      return '<button class="swatch patSw pat-' + w.id + (S.pat === w.id ? ' on' : '') + '" data-pat="' + w.id + '" title="' + w.name + '" style="--a:#fdf3dd;--b:#f6e7c9"></button>';
+    }).join('');
   return '<div class="card editor">' +
     '<div class="hint" style="margin:0 0 10px">Тащи мебель пальцем или мышкой. Стены и пол — жми на квадратик.</div>' +
     '<div class="swRow"><span>Стены</span><div class="sw">' + sw + '</div></div>' +
     '<div class="swRow"><span>Пол</span><div class="sw">' + sf + '</div></div>' +
+    '<div class="swRow"><span>Узор</span><div class="sw">' + sp + '</div></div>' +
+    (mine.length ? '' : '<div class="patHint">Обои с узором покупаются в магазине 🖼️</div>') +
     '<button class="btn ghost" id="resetFurn" style="width:100%;margin-top:10px">Расставить мебель по местам</button>' +
     '</div>';
 }
@@ -1021,6 +1042,19 @@ function screenShop(){
         '</div></div>');
     });
   });
+  b.push('<h2>Обои</h2>');
+  b.push('<p class="hint">Узор на стены сразу во всём доме — поверх любого цвета. Купила — клеится автоматом, снять можно в редакторе дома.</p>');
+  WALLPAPERS.forEach(function(w){
+    var has = S.wallpapers.indexOf(w.id) >= 0;
+    var on = S.pat === w.id;
+    b.push('<div class="card"><div class="item"><div class="ico patIco pat-' + w.id + '" style="--a:#fdf3dd;--b:#f6e7c9"></div>' +
+      '<div><div class="nm">' + esc(w.name) + '</div><div class="ds">' + esc(w.desc) + '</div></div>' +
+      '<div class="spacer"></div>' +
+      (on ? '<span class="pill good">На стенах</span>'
+          : has ? '<button class="btn" data-pat="' + w.id + '">Наклеить</button>'
+                : '<button class="btn primary" data-buy-pat="' + w.id + '">' + w.price + ' 🌰</button>') +
+      '</div></div>');
+  });
   b.push('<h2>Мебель</h2><p class="hint">Вещь сразу появляется в своей комнате, а потом её можно переставить как угодно.</p>');
   ROOMS.forEach(function(room){
     var list = FURNITURE.filter(function(f){ return f.room === room.id; });
@@ -1059,6 +1093,23 @@ function accWearer(id){
   });
   return who;
 }
+function buyPat(id){
+  var w = WALLPAPER_MAP[id];
+  if(!w) return;
+  if(S.wallpapers.indexOf(id) >= 0){
+    S.pat = (S.pat === id ? null : id);
+    save(); render();
+    toast(S.pat ? '🖼️ ' + w.name + ' — на стенах' : 'Узор снят — стены голые');
+    return;
+  }
+  if(S.coins < w.price){ toast('Не хватает каштанов — нужно ' + w.price + ' 🌰'); return; }
+  S.coins -= w.price;
+  S.wallpapers.push(id);
+  S.pat = id;
+  save(); render();
+  toast('🖼️ ' + w.name + ' — наклеены во всём доме!');
+}
+
 function buyAcc(id){
   var a = ACC_MAP[id];
   if(!a || ownsAcc(id)) return;
@@ -1362,6 +1413,15 @@ document.addEventListener('click', function(e){
     var wv = wearBtn.getAttribute('data-weap').split(':');
     var box = wearBtn.closest('.accBox');
     equipAcc(box ? box.getAttribute('data-pet') : '', wv[0], wv[1] || null); return;
+  }
+  var buyPatBtn = t.closest('[data-buy-pat]');
+  if(buyPatBtn){ buyPat(buyPatBtn.getAttribute('data-buy-pat')); return; }
+  var patBtn = t.closest('[data-pat]');
+  if(patBtn){
+    var pid = patBtn.getAttribute('data-pat');
+    S.pat = (!pid || pid === 'none') ? null : pid;
+    save(); render();
+    return;
   }
   var seedBtn = t.closest('[data-seed]');
   if(seedBtn){ buySeed(seedBtn.getAttribute('data-seed')); return; }

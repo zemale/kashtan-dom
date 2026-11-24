@@ -331,3 +331,39 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .accNone{font-size:12px;color:var(--muted)}
 .dayBadge{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:10px;padding:6px 10px;margin:-4px 0 10px}
 
+/* ---------- обои: узоры ---------- */
+.patHint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.4}
+.patIco{display:grid;place-items:center;background-repeat:repeat;border-radius:12px}
+.patIco,.swatch.patSw{--wall1:#fdf3dd;--wall2:#f6e7c9;background-size:18px 18px,100% 100%;background-repeat:repeat,no-repeat}
+.swatch.patSw{font-size:13px;line-height:1;color:var(--muted);display:grid;place-items:center}
+
+.house .wall.pat-dots,.cam .wall.pat-dots,.patIco.pat-dots,.swatch.pat-dots{
+  background-image:radial-gradient(rgba(120,90,60,.20) 1.7px,transparent 2.2px),linear-gradient(var(--wall1),var(--wall2));
+  background-size:16px 16px,100% 100%;background-repeat:repeat,no-repeat}
+
+.house .wall.pat-stripes,.cam .wall.pat-stripes,.patIco.pat-stripes,.swatch.pat-stripes{
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.55) 0 7px,rgba(120,90,60,.10) 7px 16px),linear-gradient(var(--wall1),var(--wall2));
+  background-size:100% 100%,100% 100%;background-repeat:repeat,no-repeat}
+
+.house .wall.pat-check,.cam .wall.pat-check,.patIco.pat-check,.swatch.pat-check{
+  background-image:repeating-linear-gradient(0deg,rgba(120,90,60,.16) 0 1.5px,transparent 1.5px 16px),
+                   repeating-linear-gradient(90deg,rgba(120,90,60,.16) 0 1.5px,transparent 1.5px 16px),
+                   linear-gradient(var(--wall1),var(--wall2));
+  background-size:100% 100%,100% 100%,100% 100%;background-repeat:repeat,repeat,no-repeat}
+
+.house .wall.pat-brick,.cam .wall.pat-brick,.patIco.pat-brick,.swatch.pat-brick{
+  background-image:repeating-linear-gradient(0deg,rgba(150,105,70,.22) 0 1.5px,transparent 1.5px 15px),
+                   repeating-linear-gradient(90deg,rgba(150,105,70,.16) 0 1.5px,transparent 1.5px 30px),
+                   linear-gradient(var(--wall1),var(--wall2));
+  background-size:100% 100%,100% 100%,100% 100%;background-repeat:repeat,repeat,no-repeat}
+
+.house .wall.pat-diag,.cam .wall.pat-diag,.patIco.pat-diag,.swatch.pat-diag{
+  background-image:repeating-linear-gradient(45deg,rgba(120,90,60,.13) 0 6px,transparent 6px 18px),linear-gradient(var(--wall1),var(--wall2));
+  background-size:100% 100%,100% 100%;background-repeat:repeat,no-repeat}
+
+.house .wall.pat-stars,.cam .wall.pat-stars,.patIco.pat-stars,.swatch.pat-stars{
+  background-image:radial-gradient(circle at 22% 28%,rgba(80,105,160,.55) 1.5px,transparent 2px),
+                   radial-gradient(circle at 70% 62%,rgba(80,105,160,.45) 2px,transparent 2.5px),
+                   radial-gradient(circle at 44% 82%,rgba(80,105,160,.40) 1.3px,transparent 1.8px),
+                   linear-gradient(var(--wall1),var(--wall2));
+  background-size:46px 46px,66px 66px,58px 58px,100% 100%;background-repeat:repeat,repeat,repeat,no-repeat}
