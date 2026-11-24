@@ -179,3 +179,25 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .traces{text-align:center;font-size:12.5px;opacity:.65;margin:-6px 0 10px}
 
 .house .morePets{position:absolute;right:8px;bottom:8px;background:rgba(255,255,255,.88);border:1px solid rgba(0,0,0,.06);border-radius:999px;padding:2px 8px;font-size:11px;color:#7b6a52;z-index:90}
+
+/* ---------- камеры наблюдения ---------- */
+.house{position:relative;height:auto;aspect-ratio:auto}
+.camGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px;background:#1b232e;border-radius:14px}
+.cam{position:relative;aspect-ratio:1/0.84;border-radius:8px;overflow:hidden;background:#111}
+.cam .wall{position:absolute;left:0;right:0;top:0;height:70%;background:linear-gradient(var(--wall1),var(--wall2))}
+.cam .floor{position:absolute;left:0;right:0;bottom:0;height:30%;background:repeating-linear-gradient(90deg,var(--floor1) 0 26px,var(--floor2) 26px 52px)}
+.cam .skirt{position:absolute;left:0;right:0;bottom:29.4%;height:5px;background:rgba(255,255,255,.5)}
+.cam .window{position:absolute;left:6%;top:32%;width:26%;height:34%;border-radius:4px;background:#cfe6f2;border:2px solid #fffdf7;z-index:1}
+.cam .window .sky{position:absolute;inset:0;background:linear-gradient(#bfe0f5,#e8f4fb);border-radius:2px}
+.cam .window .frame{position:absolute;left:50%;top:0;bottom:0;width:2px;background:#fffdf7;transform:translateX(-50%)}
+.camBar{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:4px;padding:3px 5px;font-size:8px;letter-spacing:.3px;color:#eaf2ff;background:linear-gradient(rgba(8,12,18,.78),rgba(8,12,18,0));z-index:95;font-family:ui-monospace,Menlo,monospace}
+.camBar b{font-weight:700}
+.camBar span{opacity:.85}
+.camBar em{margin-left:auto;font-style:normal;opacity:.9}
+.cam .rec{width:5px;height:5px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;animation:recBlink 1.6s steps(1) infinite}
+@keyframes recBlink{0%,49%{opacity:1}50%,100%{opacity:.15}}
+.camEdge{position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 26px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.08);border-radius:8px;z-index:94}
+.camEdge:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(rgba(255,255,255,.05) 0 1px,transparent 1px 3px);opacity:.55}
+.camEmpty{position:absolute;left:0;right:0;bottom:34%;text-align:center;font-size:9px;color:rgba(255,255,255,.8);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.cam .housePet{animation:camIn .55s ease-out}
+@keyframes camIn{from{opacity:0;transform:translateX(-50%) scale(.85)}to{opacity:1;transform:translateX(-50%) scale(1)}}

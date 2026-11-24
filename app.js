@@ -188,67 +188,84 @@ function freeX(x, used){
   return best == null ? x : best;
 }
 
+var ROOMS = [
+  {id:'living',  name:'Гостиная', tag:'CAM 01', wall:'cream', floor:'oak'},
+  {id:'kitchen', name:'Кухня',    tag:'CAM 02', wall:'mint',  floor:'tile'},
+  {id:'bedroom', name:'Спальня',  tag:'CAM 03', wall:'lilac', floor:'walnut'},
+  {id:'kids',    name:'Детская',  tag:'CAM 04', wall:'sky',   floor:'moss'}
+];
+
+function pad2(n){ return ('0' + n).slice(-2); }
+function clockStr(off){
+  var d = new Date(Date.now() + off * 1000);
+  return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+}
+
+function spreadX(x, used, gap){
+  x = Math.max(8, Math.min(92, x));
+  for(var t = 0; t < 30; t++){
+    var hit = false;
+    for(var i = 0; i < used.length; i++){ if(Math.abs(used[i] - x) < gap) hit = true; }
+    if(!hit) break;
+    x = x + gap;
+    if(x > 92) x = 8 + (t * 9) % 46;
+  }
+  used.push(x);
+  return Math.max(6, Math.min(94, x));
+}
+
+function camsHTML(){
+  var wSel = WALL_MAP[S.wall] || WALLS[0];
+  var fSel = FLOOR_MAP[S.floor] || FLOORS[0];
+  var customWall = S.wall !== 'cream';
+  var customFloor = S.floor !== 'oak';
+  var shift = Math.floor(Date.now() / 14000) % ROOMS.length;
+  var b = ['<div class="camGrid" id="camGrid">'];
+  ROOMS.forEach(function(room, ri){
+    var w = customWall ? wSel : (WALL_MAP[room.wall] || wSel);
+    var fl = customFloor ? fSel : (FLOOR_MAP[room.floor] || fSel);
+    var st = '--wall1:' + w.a + ';--wall2:' + w.b + ';--floor1:' + fl.a + ';--floor2:' + fl.b + ';';
+    b.push('<div class="cam" data-room="' + ri + '" style="' + st + '">');
+    b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
+    b.push('<div class="window"><div class="sky"></div><div class="frame"></div></div>');
+    b.push('<div class="camBar"><i class="rec"></i><b>' + room.tag + '</b><span>' + esc(room.name).toUpperCase() + '</span><em>' + clockStr(ri * 2) + '</em></div>');
+
+    S.furniture.forEach(function(it, i){
+      if(i % ROOMS.length !== ri) return;
+      var f = FURN_MAP[it.id];
+      if(!f) return;
+      b.push('<div class="furn" data-fid="' + it.id + '" data-room="' + ri + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + Math.round(f.size * 0.55) + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
+    });
+
+    var mine = [];
+    S.pets.forEach(function(pp, pi){ if((pi + shift) % ROOMS.length === ri) mine.push(pp); });
+    var used = [];
+    mine.forEach(function(pp, k){
+      var d = PET_ACTS[pp.petId] || {x:50, y:2, s:22, a:'walk'};
+      if(pp.petId === 'owl' && !own('shelf')) d = {x:20, y:2, s:20, a:'walk'};
+      var sz = d.s || 22;
+      if(mine.length > 3) sz = Math.min(sz, 86 / mine.length);
+      var x = spreadX(d.x, used, Math.max(14, sz + 5));
+      var y = Math.max(2, Math.min(78, d.y));
+      var props = (d.props || []).map(function(pr){
+        return '<span class="prop ' + pr.c + '">' + pr.e + '</span>';
+      }).join('');
+      b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + y + '%;width:' + sz + '%;z-index:' + (20 + k) + '">' +
+        '<div class="petBody">' + petSVG(pp.petId, pp.feed, 200, pp.level, tracesOf(pp)) + '</div>' + props +
+        (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
+        '</div>');
+    });
+    if(!mine.length) b.push('<div class="camEmpty">тут пока тихо…</div>');
+    b.push('<div class="camEdge"></div>');
+    b.push('</div>');
+  });
+  b.push('</div>');
+  return b.join('');
+}
+
 function houseHTML(){
-  var w = WALL_MAP[S.wall] || WALLS[0];
-  var fl = FLOOR_MAP[S.floor] || FLOORS[0];
-  var style = '--wall1:' + w.a + ';--wall2:' + w.b + ';--floor1:' + fl.a + ';--floor2:' + fl.b + ';';
-  var b = ['<div class="house' + (editMode ? ' edit' : '') + '" id="house" style="' + style + '">'];
-  b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
-  b.push('<div class="window"><div class="sky"></div><div class="frame"></div><div class="bird">🐦</div></div><div class="sill"></div>');
-  S.furniture.forEach(function(it){
-    var f = FURN_MAP[it.id];
-    if(!f) return;
-    b.push('<div class="furn" data-fid="' + it.id + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + f.size + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
-  });
-  var MAX_HOUSE = 12;
-  var housePets = S.pets.slice(0, MAX_HOUSE);
-  var floorList = [], wallList = [];
-  housePets.forEach(function(p){
-    var d = PET_ACTS[p.petId] || {x:50, y:2, s:22, a:'walk'};
-    if(p.petId === 'owl' && !own('shelf')) d = {x:20, y:2, s:20, a:'walk'};
-    (d.y < 30 ? floorList : wallList).push({p:p, d:d});
-  });
-  var items = [];
-  var fN = floorList.length;
-  var fRows = 1, fCols = Math.max(1, fN), fsz = 19;
-  for(var cc = Math.max(1, fN); cc >= 1; cc--){
-    var rr = Math.ceil(fN / cc);
-    var ss = Math.min(19, 88 / cc);
-    if(rr * (ss * 1.6 + 1.5) <= 40){ fRows = rr; fCols = cc; fsz = ss; break; }
-  }
-  var rowStep = fsz * 1.6 + 1.5;
-  floorList.forEach(function(it, i){
-    var row = Math.floor(i / fCols);
-    var col = i % fCols;
-    it.x = (col + 0.5) * 100 / fCols;
-    it.y = 1 + row * rowStep;
-    it.s = fsz;
-    it.z = 20 + i;
-    items.push(it);
-  });
-  var wN = wallList.length;
-  var wsz = Math.min(22, 88 / Math.max(1, wN));
-  wallList.forEach(function(it, i){
-    it.x = wN === 1 ? Math.max(wsz / 2 + 3, Math.min(97 - wsz / 2, it.d.x)) : (i + 0.5) * 100 / wN;
-    it.y = Math.max(26, Math.min(74, it.d.y));
-    it.s = Math.min(it.d.s || 20, wsz);
-    it.z = 40 + i;
-    items.push(it);
-  });
-  items.forEach(function(it){
-    var p = it.p, d = it.d, sz = it.s;
-    var x = Math.max(sz / 2 + 2, Math.min(98 - sz / 2, it.x));
-    var props = (d.props || []).map(function(pr){
-      return '<span class="prop ' + pr.c + '">' + pr.e + '</span>';
-    }).join('');
-    b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + it.y + '%;width:' + sz + '%;z-index:' + it.z + '">' +
-      '<div class="petBody">' + petSVG(p.petId, p.feed, 200, p.level, tracesOf(p)) + '</div>' + props +
-      (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
-      '</div>');
-  });
-  if(S.pets.length > MAX_HOUSE){
-    b.push('<div class="morePets">+' + (S.pets.length - MAX_HOUSE) + ' ещё в домике</div>');
-  }
+  var b = ['<div class="house' + (editMode ? ' edit' : '') + '" id="house">'];
+  b.push('<div id="camsWrap">' + camsHTML() + '</div>');
   if(!S.pets.length){
     b.push('<div class="emptyHouse">Дом пустой — заведи первого питомца 🐾</div>');
   }
@@ -298,16 +315,16 @@ function screenHome(){
 /* ---------- перетаскивание мебели ---------- */
 var drag = null;
 function bindHouseDrag(){
-  var house = document.getElementById('house');
-  if(!house || !editMode) return;
-  var rect = function(){ return house.getBoundingClientRect(); };
-  var items = house.querySelectorAll('.furn');
+  if(!editMode) return;
+  var grid = document.getElementById('camGrid');
+  if(!grid) return;
+  var items = grid.querySelectorAll('.furn');
   for(var i = 0; i < items.length; i++){
     (function(el){
       var box = null;
       el.addEventListener('pointerdown', function(e){
         e.preventDefault();
-        box = rect();
+        box = el.parentNode.getBoundingClientRect();
         drag = {el:el, id:el.getAttribute('data-fid'), box:box, x:null, y:null};
         el.classList.add('dragging');
         try{ el.setPointerCapture(e.pointerId); }catch(err){}
@@ -611,6 +628,15 @@ function render(){
     b.classList.toggle('on', b.getAttribute('data-tab') === tab);
   });
   bindHouseDrag();
+  clearInterval(window._camTimer);
+  if(tab === 'home' && !editMode){
+    window._camTimer = setInterval(function(){
+      var wrap = document.getElementById('camsWrap');
+      if(!wrap) return;
+      wrap.innerHTML = camsHTML();
+      bindHouseDrag();
+    }, 14000);
+  }
 }
 
 document.addEventListener('click', function(e){
