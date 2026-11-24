@@ -3,19 +3,78 @@
 var KEY = 'kashtan_v1';
 
 var FURNITURE = [
-  {id:'rug',    name:'Ковёр',        emoji:'🟧', price:40,  left:50, bottom:4,  size:34, z:1,  desc:'Тёплый, мягкий'},
-  {id:'plant',  name:'Растение',     emoji:'🪴', price:50,  left:12, bottom:6,  size:30, z:3,  desc:'Живое в доме'},
-  {id:'lamp',   name:'Торшер',       emoji:'💡', price:60,  left:88, bottom:8,  size:30, z:3,  desc:'Свет по вечерам'},
-  {id:'shelf',  name:'Полка с книгами', emoji:'📚', price:70, left:78, bottom:44, size:28, z:2, desc:'Есть что почитать'},
-  {id:'pillow', name:'Подушка',      emoji:'🛋', price:45,  left:24, bottom:4,  size:26, z:2,  desc:'Для ленивых вечеров'},
-  {id:'clock',  name:'Часы',         emoji:'🕰', price:65,  left:62, bottom:56, size:24, z:2,  desc:'Тик-так'},
-  {id:'garland',name:'Гирлянда',     emoji:'✨', price:55,  left:50, bottom:78, size:26, z:2,  desc:'Праздник каждый день'},
-  {id:'aqua',   name:'Аквариум',     emoji:'🐠', price:90,  left:16, bottom:46, size:28, z:2,  desc:'Рыбки молчат'},
-  {id:'table',  name:'Стол',         emoji:'🪑', price:80,  left:66, bottom:5,  size:30, z:3,  desc:'Рабочее место'},
-  {id:'piano',  name:'Пианино',      emoji:'🎹', price:120, left:88, bottom:5,  size:32, z:3,  desc:'Для настроения'},
-  {id:'frame',  name:'Картина',      emoji:'🖼', price:60,  left:42, bottom:52, size:26, z:2,  desc:'На стену'},
-  {id:'catbed', name:'Лежанка',      emoji:'🧺', price:75,  left:36, bottom:3,  size:26, z:2,  desc:'Уютное гнездо'}
+  {id:'rug',    name:'Ковёр',        emoji:'🟧', price:40,  x:50, y:4,  size:34, z:1, desc:'Тёплый, мягкий'},
+  {id:'plant',  name:'Растение',     emoji:'🪴', price:50,  x:12, y:6,  size:30, z:3, desc:'Живое в доме'},
+  {id:'lamp',   name:'Торшер',       emoji:'💡', price:60,  x:88, y:8,  size:30, z:3, desc:'Свет по вечерам'},
+  {id:'shelf',  name:'Полка с книгами', emoji:'📚', price:70, x:78, y:44, size:28, z:2, desc:'Есть что почитать'},
+  {id:'pillow', name:'Подушка',      emoji:'🛋', price:45,  x:24, y:4,  size:26, z:2, desc:'Для ленивых вечеров'},
+  {id:'clock',  name:'Часы',         emoji:'🕰', price:65,  x:62, y:56, size:24, z:2, desc:'Тик-так'},
+  {id:'garland',name:'Гирлянда',     emoji:'✨', price:55,  x:50, y:78, size:26, z:2, desc:'Праздник каждый день'},
+  {id:'aqua',   name:'Аквариум',     emoji:'🐠', price:90,  x:16, y:46, size:28, z:2, desc:'Рыбки молчат'},
+  {id:'table',  name:'Стол',         emoji:'🪑', price:80,  x:66, y:5,  size:30, z:3, desc:'Рабочее место'},
+  {id:'piano',  name:'Пианино',      emoji:'🎹', price:120, x:88, y:5,  size:32, z:3, desc:'Для настроения'},
+  {id:'frame',  name:'Картина',      emoji:'🖼', price:60,  x:42, y:52, size:26, z:2, desc:'На стену'},
+  {id:'catbed', name:'Лежанка',      emoji:'🧺', price:75,  x:36, y:3,  size:26, z:2, desc:'Уютное гнездо'}
 ];
+var FURN_MAP = {};
+FURNITURE.forEach(function(f){ f.x0 = f.x; f.y0 = f.y; FURN_MAP[f.id] = f; });
+
+var WALLS = [
+  {id:'cream', name:'Крем',    a:'#fdf3dd', b:'#f6e7c9'},
+  {id:'mint',  name:'Мята',    a:'#ebf6e7', b:'#d7ead0'},
+  {id:'rose',  name:'Розовый', a:'#fdeaea', b:'#f8d6d6'},
+  {id:'sky',   name:'Небо',    a:'#e9f2fc', b:'#d3e4f7'},
+  {id:'lilac', name:'Лаванда', a:'#f1eafc', b:'#ded0f6'},
+  {id:'sand',  name:'Песок',   a:'#f8f0e0', b:'#eedcbf'},
+  {id:'night', name:'Ночь',    a:'#445471', b:'#303c53'}
+];
+var FLOORS = [
+  {id:'oak',    name:'Дуб',    a:'#d9b98b', b:'#d2b07f'},
+  {id:'walnut', name:'Орех',   a:'#a97c50', b:'#9a6d43'},
+  {id:'grey',   name:'Серый',  a:'#cdc8c0', b:'#bfb9b0'},
+  {id:'moss',   name:'Мох',    a:'#a7bd93', b:'#97ad83'},
+  {id:'rose',   name:'Розовый',a:'#e7c6c6', b:'#dcb6b6'},
+  {id:'tile',   name:'Плитка', a:'#ece6da', b:'#ded7c8'}
+];
+var WALL_MAP = {}, FLOOR_MAP = {};
+WALLS.forEach(function(w){ WALL_MAP[w.id] = w; });
+FLOORS.forEach(function(f){ FLOOR_MAP[f.id] = f; });
+
+/* чем занят питомец: x/y — место в доме, s — размер, a — анимация */
+var PET_ACTS = {
+  cat:     {x:16, y:51, s:22, a:'window'},
+  dog:     {x:54, y:3,  s:26, a:'play', toy:'🎾'},
+  owl:     {x:79, y:47, s:20, a:'perch'},
+  dragon:  {x:70, y:63, s:22, a:'fly', toy:'✨'},
+  griffin: {x:87, y:58, s:20, a:'fly'},
+  swan:    {x:38, y:2,  s:24, a:'glide'},
+  snake:   {x:30, y:2,  s:22, a:'crawl'},
+  seal:    {x:24, y:2,  s:22, a:'nap'},
+  capy:    {x:46, y:3,  s:24, a:'nap'},
+  unicorn: {x:64, y:3,  s:24, a:'sparkle', toy:'✨'},
+  horse:   {x:76, y:3,  s:26, a:'walk'},
+  deer:    {x:86, y:3,  s:24, a:'walk'},
+  wolf:    {x:10, y:3,  s:24, a:'walk'},
+  lion:    {x:44, y:2,  s:26, a:'walk'},
+  fox:     {x:68, y:2,  s:22, a:'walk'}
+};
+var ACT_TEXT = {
+  cat:'смотрит в окно на птичек, сидя на подоконнике',
+  dog:'играет с мячиком на полу',
+  owl:'сидит на полке и наблюдает за домом',
+  dragon:'парит под потолком и пускает искры',
+  griffin:'летает под потолком',
+  swan:'гуляет, плавно покачиваясь',
+  snake:'ползёт вдоль пола',
+  seal:'дремлет на тёплом полу',
+  capy:'дремлет в уютном углу',
+  unicorn:'сияет искрами',
+  horse:'расхаживает по комнате',
+  deer:'стоит у окна',
+  wolf:'ходит кругами',
+  lion:'лежит и поглядывает',
+  fox:'принюхивается к мебели'
+};
 
 var MILESTONES = {3:30, 7:80, 14:180, 21:400};
 var FEED_PRICE = 15;
@@ -36,6 +95,7 @@ function uid(){ return Math.random().toString(36).slice(2, 9); }
 function defaultState(){
   return {
     coins: 60, tickets: 1,
+    wall: 'cream', floor: 'oak',
     habits: [
       {id:uid(), title:'Читать 20 минут', kind:'good', streak:0, best:0, last:null, frozen:false, days:{}},
       {id:uid(), title:'Зарядка утром', kind:'good', streak:0, best:0, last:null, frozen:false, days:{}},
@@ -53,57 +113,104 @@ function load(){
   }catch(e){}
   if(!S || !S.habits){ S = defaultState(); save(); }
   if(!S.pets) S.pets = [];
-  if(!S.furniture) S.furniture = [];
   if(!S.log) S.log = [];
+  if(!WALL_MAP[S.wall]) S.wall = 'cream';
+  if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
+  S.furniture = (S.furniture || []).map(function(it){
+    if(typeof it === 'string'){
+      var d = FURN_MAP[it];
+      return d ? {id:d.id, x:d.x0, y:d.y0} : null;
+    }
+    if(!it || !it.id || !FURN_MAP[it.id]) return null;
+    if(it.x == null || it.y == null){ it.x = FURN_MAP[it.id].x0; it.y = FURN_MAP[it.id].y0; }
+    return it;
+  }).filter(function(x){ return !!x; });
 }
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
 }
 
 var tab = 'home';
+var editMode = false;
 var ui = { adopt:null, adoptFeed:null, pet:null };
 
 /* ---------- утилиты ---------- */
-function h(html){
-  var d = document.createElement('div');
-  d.innerHTML = html.trim();
-  return d.firstChild;
-}
 function esc(s){
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function toast(msg){
   var t = document.getElementById('toast');
-  if(!t){ t = h('<div class="toast" id="toast"></div>'); document.body.appendChild(t); }
+  if(!t){ t = document.createElement('div'); t.className = 'toast'; t.id = 'toast'; document.body.appendChild(t); }
   t.textContent = msg;
   t.classList.add('on');
   clearTimeout(t._tm);
   t._tm = setTimeout(function(){ t.classList.remove('on'); }, 2100);
 }
-function coins(n){ return n + ' 🌰'; }
+function own(id){
+  for(var i = 0; i < S.furniture.length; i++){ if(S.furniture[i].id === id) return true; }
+  return false;
+}
 
 /* ---------- дом ---------- */
+function freeX(x, used){
+  var ok = true;
+  used.forEach(function(u){ if(Math.abs(u - x) < 11) ok = false; });
+  if(ok) return x;
+  var slots = [8,20,32,44,56,68,80,92];
+  var best = null, bd = 999;
+  slots.forEach(function(s){
+    var busy = false;
+    used.forEach(function(u){ if(Math.abs(u - s) < 11) busy = true; });
+    if(busy) return;
+    if(Math.abs(s - x) < bd){ bd = Math.abs(s - x); best = s; }
+  });
+  return best == null ? x : best;
+}
+
 function houseHTML(){
-  var pets = S.pets;
-  var n = Math.min(pets.length, 8);
-  var w = n ? Math.min(30, 86 / n) : 0;
-  var items = [];
-  S.furniture.forEach(function(fid){
-    var f = null;
-    FURNITURE.forEach(function(x){ if(x.id === fid) f = x; });
+  var w = WALL_MAP[S.wall] || WALLS[0];
+  var fl = FLOOR_MAP[S.floor] || FLOORS[0];
+  var style = '--wall1:' + w.a + ';--wall2:' + w.b + ';--floor1:' + fl.a + ';--floor2:' + fl.b + ';';
+  var b = ['<div class="house' + (editMode ? ' edit' : '') + '" id="house" style="' + style + '">'];
+  b.push('<div class="wall"></div><div class="floor"></div><div class="skirt"></div>');
+  b.push('<div class="window"><div class="sky"></div><div class="frame"></div><div class="bird">🐦</div></div><div class="sill"></div>');
+  S.furniture.forEach(function(it){
+    var f = FURN_MAP[it.id];
     if(!f) return;
-    items.push('<div class="furn" style="left:' + f.left + '%;bottom:' + f.bottom + '%;font-size:' + f.size + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
+    b.push('<div class="furn" data-fid="' + it.id + '" style="left:' + it.x + '%;bottom:' + it.y + '%;font-size:' + f.size + 'px;z-index:' + f.z + '">' + f.emoji + '</div>');
   });
-  var petHTML = '';
-  pets.slice(0, 8).forEach(function(p, i){
-    var left = 6 + i * (84 / Math.max(n, 1));
-    petHTML += '<div class="housePet" style="left:' + left + '%;width:' + w + '%;z-index:' + (5 + i) + '">' +
-      petSVG(p.petId, p.feed, 100, p.level) + '</div>';
+  var used = [];
+  S.pets.slice(0, 8).forEach(function(p, i){
+    var d = PET_ACTS[p.petId] || {x:14 + i * 10, y:2, s:22, a:'walk'};
+    if(p.petId === 'owl' && !own('shelf')) d = {x:20, y:2, s:20, a:'walk'};
+    var x = freeX(d.x, used);
+    used.push(x);
+    b.push('<div class="housePet act-' + d.a + '" style="left:' + x + '%;bottom:' + d.y + '%;width:' + d.s + '%;z-index:' + (10 + i) + '">' +
+      '<div class="petBody">' + petSVG(p.petId, p.feed, 200, p.level) + '</div>' +
+      (d.toy ? '<span class="toy">' + d.toy + '</span>' : '') +
+      (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
+      '</div>');
   });
-  var wall = '<div class="wall"></div><div class="floor"></div>' +
-    '<div class="window"><div class="sky"></div><div class="frame"></div></div>';
-  return '<div class="house">' + wall + items.join('') + petHTML +
-    (pets.length ? '' : '<div class="emptyHouse">Дом пустой — заведи первого питомца 🐾</div>') + '</div>';
+  if(!S.pets.length){
+    b.push('<div class="emptyHouse">Дом пустой — заведи первого питомца 🐾</div>');
+  }
+  b.push('</div>');
+  return b.join('');
+}
+
+function editorHTML(){
+  var sw = WALLS.map(function(c){
+    return '<button class="swatch' + (S.wall === c.id ? ' on' : '') + '" data-wall="' + c.id + '" title="' + c.name + '" style="--a:' + c.a + ';--b:' + c.b + '"></button>';
+  }).join('');
+  var sf = FLOORS.map(function(c){
+    return '<button class="swatch' + (S.floor === c.id ? ' on' : '') + '" data-floor="' + c.id + '" title="' + c.name + '" style="--a:' + c.a + ';--b:' + c.b + '"></button>';
+  }).join('');
+  return '<div class="card editor">' +
+    '<div class="hint" style="margin:0 0 10px">Тащи мебель пальцем или мышкой. Стены и пол — жми на квадратик.</div>' +
+    '<div class="swRow"><span>Стены</span><div class="sw">' + sw + '</div></div>' +
+    '<div class="swRow"><span>Пол</span><div class="sw">' + sf + '</div></div>' +
+    '<button class="btn ghost" id="resetFurn" style="width:100%;margin-top:10px">Расставить мебель по местам</button>' +
+    '</div>';
 }
 
 function screenHome(){
@@ -111,6 +218,9 @@ function screenHome(){
   S.habits.forEach(function(x){ totalStreak = Math.max(totalStreak, x.streak); });
   var b = [];
   b.push(houseHTML());
+  b.push('<div class="row" style="margin-bottom:10px"><button class="btn ' + (editMode ? 'primary' : '') + '" id="editHouse" style="flex:1;padding:12px">' +
+    (editMode ? '✓ Готово' : '✏️ Обставить дом') + '</button></div>');
+  if(editMode) b.push(editorHTML());
   b.push('<div class="card"><div class="row"><div><b>Серия</b><div class="meta">' + totalStreak + ' дн. лучшая сейчас</div></div><div class="spacer"></div><div class="pill good">' + S.pets.length + ' питомцев</div></div></div>');
   if(S.pets.length){
     b.push('<h3>Питомцы</h3><div class="petShelf">');
@@ -123,8 +233,52 @@ function screenHome(){
   } else {
     b.push('<p class="hint">Питомца заводят за жетон 🎟 — жетоны дают за выполненные привычки.</p>');
   }
-  b.push('<h3>Как играть</h3><div class="card"><p class="hint" style="margin:0">Отмечай привычки каждый день → получаешь каштаны 🌰 и жетоны 🎟. Каштаны — на мебель, жетоны — на питомцев. Корм меняет внешность питомца: белый делает альбиносом, зелёный выращивает растения, добрый даёт крылья. Серии 3/7/14/21 дают бонус.</p></div>');
+  b.push('<h3>Как играть</h3><div class="card"><p class="hint" style="margin:0">Отмечай привычки каждый день → получаешь каштаны 🌰 и жетоны 🎟. Каштаны — на мебель, жетоны — на питомцев. Дом обставляется как хочешь: двигай мебель, меняй стены и пол. Корм меняет внешность питомца: белый делает альбиносом, зелёный выращивает растения, добрый даёт крылья. Серии 3/7/14/21 дают бонус.</p></div>');
   return b.join('');
+}
+
+/* ---------- перетаскивание мебели ---------- */
+var drag = null;
+function bindHouseDrag(){
+  var house = document.getElementById('house');
+  if(!house || !editMode) return;
+  var rect = function(){ return house.getBoundingClientRect(); };
+  var items = house.querySelectorAll('.furn');
+  for(var i = 0; i < items.length; i++){
+    (function(el){
+      var box = null;
+      el.addEventListener('pointerdown', function(e){
+        e.preventDefault();
+        box = rect();
+        drag = {el:el, id:el.getAttribute('data-fid'), box:box, x:null, y:null};
+        el.classList.add('dragging');
+        try{ el.setPointerCapture(e.pointerId); }catch(err){}
+      });
+      el.addEventListener('pointermove', function(e){
+        if(!drag || drag.el !== el) return;
+        var x = (e.clientX - drag.box.left) / drag.box.width * 100;
+        var y = (drag.box.bottom - e.clientY) / drag.box.height * 100;
+        x = Math.max(4, Math.min(96, x));
+        y = Math.max(1, Math.min(90, y));
+        drag.x = x; drag.y = y;
+        el.style.left = x + '%';
+        el.style.bottom = y + '%';
+      });
+      var finish = function(){
+        if(!drag || drag.el !== el) return;
+        if(drag.x != null){
+          S.furniture.forEach(function(it){
+            if(it.id === drag.id){ it.x = Math.round(drag.x); it.y = Math.round(drag.y); }
+          });
+          save();
+        }
+        el.classList.remove('dragging');
+        drag = null;
+      };
+      el.addEventListener('pointerup', finish);
+      el.addEventListener('pointercancel', finish);
+    })(items[i]);
+  }
 }
 
 /* ---------- привычки ---------- */
@@ -178,7 +332,7 @@ function checkin(id, ok){
 
   if(ok){
     if(gap === null || gap > 2) hb.streak = 1;
-    else if(gap === 2) { hb.streak = hb.streak + 1; hb.frozen = true; toast('❄️ Заморозка спасла серию'); }
+    else if(gap === 2){ hb.streak = hb.streak + 1; hb.frozen = true; toast('❄️ Заморозка спасла серию'); }
     else hb.streak = hb.streak + 1;
     if(hb.streak > hb.best) hb.best = hb.streak;
     hb.days[t] = 1;
@@ -224,28 +378,27 @@ function habitModal(){
 
 /* ---------- магазин ---------- */
 function screenShop(){
-  var b = ['<h2>Магазин мебели</h2><p class="hint">Вещи сразу появляются в доме — без расстановки, всё уже на местах.</p>'];
+  var b = ['<h2>Магазин мебели</h2><p class="hint">Вещь сразу появляется в доме, а потом её можно переставить как угодно.</p>'];
   FURNITURE.forEach(function(f){
-    var owned = S.furniture.indexOf(f.id) >= 0;
+    var has = own(f.id);
     b.push('<div class="card"><div class="item"><div class="ico">' + f.emoji + '</div>' +
       '<div><div class="nm">' + esc(f.name) + '</div><div class="ds">' + esc(f.desc) + '</div></div>' +
       '<div class="spacer"></div>' +
-      (owned ? '<span class="pill good">В доме</span>' : '<button class="btn primary" data-buy="' + f.id + '">' + f.price + ' 🌰</button>') +
+      (has ? '<span class="pill good">В доме</span>' : '<button class="btn primary" data-buy="' + f.id + '">' + f.price + ' 🌰</button>') +
       '</div></div>');
   });
   return b.join('');
 }
 
 function buy(id){
-  var f = null;
-  FURNITURE.forEach(function(x){ if(x.id === id) f = x; });
+  var f = FURN_MAP[id];
   if(!f) return;
-  if(S.furniture.indexOf(id) >= 0) return;
+  if(own(id)) return;
   if(S.coins < f.price){ toast('Не хватает каштанов'); return; }
   S.coins -= f.price;
-  S.furniture.push(id);
+  S.furniture.push({id:id, x:f.x0, y:f.y0});
   save(); render();
-  toast(f.name + ' — в доме!');
+  toast(f.name + ' — в доме! Переставь как нравится');
 }
 
 /* ---------- питомцы ---------- */
@@ -333,12 +486,14 @@ function petModal(id){
   if(!p) return;
   var pet = PET_MAP[p.petId];
   var f = FEED_MAP[p.feed] || FEED_MAP.base;
+  var act = ACT_TEXT[p.petId] || 'гуляет по дому';
   var btns = FEEDS.map(function(x){
     return '<button class="feedbtn' + (x.id === p.feed ? ' on' : '') + '" data-pfeed="' + x.id + '"><span>' + x.emoji + '</span>' + x.name + '</button>';
   }).join('');
   modal('<h3>' + esc(p.name) + '</h3>' +
     '<div class="petBig">' + petSVG(p.petId, p.feed, 190, p.level) + '</div>' +
-    '<div class="meta" style="text-align:center">' + f.emoji + ' ' + f.name + ' · уровень ' + p.level + ' · ' + f.short + '</div>' +
+    '<div class="meta" style="text-align:center">' + f.emoji + ' ' + f.name + ' · уровень ' + p.level + '</div>' +
+    '<div class="actNote">Сейчас ' + act + '. ' + f.short + '.</div>' +
     '<h3 style="margin-top:16px">Покормить · ' + FEED_PRICE + ' 🌰</h3>' +
     '<div class="feedGrid">' + btns + '</div>' +
     '<div class="row" style="margin-top:14px"><input class="inp" id="petName" value="' + esc(p.name) + '" maxlength="20">' +
@@ -349,7 +504,7 @@ function petModal(id){
   document.getElementById('petRename').onclick = function(){
     var v = document.getElementById('petName').value.trim();
     if(!v) return;
-    p.name = v; save(); toast('Теперь зовут ' + v); petModal(p.id); render();
+    p.name = v; save(); petModal(p.id); render(); toast('Теперь зовут ' + v);
   };
 }
 
@@ -389,13 +544,26 @@ function render(){
   document.querySelectorAll('#tabs button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-tab') === tab);
   });
+  bindHouseDrag();
 }
 
 document.addEventListener('click', function(e){
   var t = e.target;
   var tabBtn = t.closest('#tabs button');
-  if(tabBtn){ tab = tabBtn.getAttribute('data-tab'); render(); window.scrollTo(0,0); return; }
+  if(tabBtn){ tab = tabBtn.getAttribute('data-tab'); editMode = false; render(); window.scrollTo(0,0); return; }
   if(t.closest('[data-close]')){ closeModal(); return; }
+  if(t.closest('#editHouse')){ editMode = !editMode; render(); window.scrollTo(0,0); return; }
+  var wb = t.closest('[data-wall]');
+  if(wb){ S.wall = wb.getAttribute('data-wall'); save(); render(); return; }
+  var fb = t.closest('[data-floor]');
+  if(fb){ S.floor = fb.getAttribute('data-floor'); save(); render(); return; }
+  if(t.closest('#resetFurn')){
+    S.furniture.forEach(function(it){
+      var f = FURN_MAP[it.id];
+      if(f){ it.x = f.x0; it.y = f.y0; }
+    });
+    save(); render(); toast('Мебель вернулась на места'); return;
+  }
   var doBtn = t.closest('[data-do]');
   if(doBtn){ checkin(doBtn.getAttribute('data-h'), doBtn.getAttribute('data-do') === 'yes'); return; }
   if(t.closest('#addHabit')){ habitModal(); return; }

@@ -105,3 +105,52 @@ p.hint{color:var(--muted);font-size:13px;margin:0 4px 12px;line-height:1.45}
 .inp{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;
   background:#fff;color:var(--ink);outline:none;min-width:0}
 .inp:focus{border-color:var(--green)}
+
+/* ---------- дом-конструктор ---------- */
+.house{--wall1:#fdf3dd;--wall2:#f6e7c9;--floor1:#d9b98b;--floor2:#d2b07f}
+.house .wall{background:linear-gradient(var(--wall1),var(--wall2));transition:background .25s}
+.house .floor{background:repeating-linear-gradient(90deg,var(--floor1) 0 26px,var(--floor2) 26px 52px);transition:background .25s}
+.house .skirt{position:absolute;left:0;right:0;bottom:29.4%;height:7px;background:rgba(255,255,255,.5)}
+.house .sill{position:absolute;left:5%;bottom:50%;width:27%;height:7px;border-radius:4px;background:#fffdf7;box-shadow:0 2px 5px rgba(0,0,0,.14)}
+.house .bird{position:absolute;left:0;top:24%;font-size:11px;line-height:1;animation:birdFly 8s linear infinite}
+@keyframes birdFly{
+  0%{transform:translate(-8px,0) scaleX(1);opacity:0}
+  12%{opacity:1}
+  46%{transform:translate(42px,-10px) scaleX(1);opacity:1}
+  50%{transform:translate(44px,-9px) scaleX(-1)}
+  92%{transform:translate(-4px,4px) scaleX(-1);opacity:1}
+  100%{transform:translate(-8px,4px) scaleX(-1);opacity:0}
+}
+.house .housePet{position:absolute;transform:translateX(-50%);line-height:0;pointer-events:none}
+.housePet svg{width:100%;height:auto;display:block}
+.housePet .petBody{position:relative;transform-origin:50% 100%}
+.housePet .toy{position:absolute;right:-10%;bottom:1%;font-size:13px;line-height:1;animation:toyBounce 1.5s ease-in-out infinite}
+.housePet .zzz{position:absolute;right:-8%;top:-8%;font-size:12px;line-height:1;animation:zzzUp 3.4s ease-in-out infinite}
+@keyframes toyBounce{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-12px,-8px) rotate(-40deg)}}
+@keyframes zzzUp{0%{opacity:0;transform:translateY(0)}30%{opacity:.95}100%{opacity:0;transform:translateY(-15px)}}
+.act-window .petBody{animation:petBob 3.6s ease-in-out infinite}
+.act-play .petBody{animation:petHop 1.1s ease-in-out infinite}
+.act-fly .petBody{animation:petFly 4.2s ease-in-out infinite}
+.act-perch .petBody{animation:petSway 4.6s ease-in-out infinite}
+.act-nap .petBody{animation:petBreathe 3.8s ease-in-out infinite}
+.act-crawl .petBody{animation:petCrawl 6.5s ease-in-out infinite}
+.act-glide .petBody{animation:petGlide 7.5s ease-in-out infinite}
+.act-walk .petBody{animation:petSway 5.4s ease-in-out infinite}
+.act-sparkle .petBody{animation:petBob 2.8s ease-in-out infinite}
+@keyframes petBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes petHop{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-7px) rotate(-3deg)}55%{transform:translateY(0) rotate(0)}78%{transform:translateY(-4px) rotate(3deg)}}
+@keyframes petFly{0%,100%{transform:translateY(0) rotate(-1.6deg)}50%{transform:translateY(-9px) rotate(1.6deg)}}
+@keyframes petSway{0%,100%{transform:rotate(-1.3deg)}50%{transform:rotate(1.3deg)}}
+@keyframes petBreathe{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.96) translateY(1px)}}
+@keyframes petCrawl{0%,100%{transform:translateX(-7px)}50%{transform:translateX(7px)}}
+@keyframes petGlide{0%,100%{transform:translateX(-10px)}50%{transform:translateX(10px)}}
+.house.edit .furn{pointer-events:auto;cursor:grab;touch-action:none;outline:2px dashed rgba(224,145,63,.7);outline-offset:3px;border-radius:8px;animation:editPulse 1.8s ease-in-out infinite}
+.house.edit .furn.dragging{cursor:grabbing;background:rgba(255,255,255,.4);z-index:60!important;animation:none;outline-style:solid}
+@keyframes editPulse{0%,100%{outline-color:rgba(224,145,63,.4)}50%{outline-color:rgba(224,145,63,.95)}}
+.editor .swRow{display:flex;align-items:center;gap:8px;margin-top:10px}
+.editor .swRow>span{font-size:12px;font-weight:700;color:var(--muted);width:46px;flex:0 0 46px}
+.editor .sw{display:flex;gap:6px;flex-wrap:wrap}
+.editor .swatch{width:30px;height:30px;border-radius:9px;border:2px solid transparent;padding:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--a),var(--b));box-shadow:inset 0 0 0 1px rgba(0,0,0,.07)}
+.editor .swatch.on{border-color:var(--green);box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--green)}
+.actNote{margin:10px 0 0;text-align:center;font-size:12.5px;color:var(--muted);line-height:1.45}
