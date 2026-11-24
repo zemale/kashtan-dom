@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Каштановый дом</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">🌰 <b>Каштановый дом</b></div>
+    <div class="coins" id="coins"><span>0</span> 🌰</div>
+  </header>
+  <main id="screen"></main>
+  <nav class="tabs" id="tabs">
+    <button data-tab="home" class="on">🏠<span>Дом</span></button>
+    <button data-tab="habits">✅<span>Привычки</span></button>
+    <button data-tab="shop">🛍️<span>Магазин</span></button>
+    <button data-tab="pets">🐾<span>Питомцы</span></button>
+  </nav>
+</div>
+<div class="modal" id="modal" hidden>
+  <div class="backdrop" data-close="1"></div>
+  <div class="sheet" id="sheet"></div>
+</div>
+<script src="pets.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
