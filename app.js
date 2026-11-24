@@ -56,7 +56,17 @@ var PET_ACTS = {
   deer:    {x:86, y:3,  s:24, a:'graze', props:[{e:'🌿', c:'front'}]},
   wolf:    {x:10, y:3,  s:24, a:'chew', props:[{e:'🦴', c:'front'}]},
   lion:    {x:44, y:2,  s:26, a:'pounce', props:[{e:'🧶', c:'side'}]},
-  fox:     {x:68, y:2,  s:22, a:'pounce', props:[{e:'🧦', c:'side'}]}
+  fox:     {x:68, y:2,  s:22, a:'pounce', props:[{e:'🧦', c:'side'}]},
+  turtle:  {x:24, y:3,  s:22, a:'crawl', props:[{e:'🥬', c:'front'}]},
+  panda:   {x:56, y:3,  s:26, a:'chew', props:[{e:'🎋', c:'front'}]},
+  penguin: {x:14, y:2,  s:22, a:'crawl', props:[{e:'❄️', c:'side'}]},
+  hedgehog:{x:40, y:3,  s:20, a:'walk', props:[{e:'🍎', c:'side'}]},
+  frog:    {x:64, y:2,  s:20, a:'pounce', props:[{e:'🪰', c:'side'}]},
+  koala:   {x:84, y:42, s:20, a:'nap', props:[{e:'🌿', c:'side'}]},
+  peacock: {x:74, y:3,  s:24, a:'preen', props:[{e:'🪶', c:'side'}]},
+  otter:   {x:12, y:2,  s:22, a:'balance', props:[{e:'🪨', c:'nose'}]},
+  bat:     {x:34, y:64, s:18, a:'perch', props:[{e:'🌙', c:'side'}]},
+  hamster: {x:48, y:3,  s:20, a:'chew', props:[{e:'🌻', c:'front'}]}
 };
 var ACT_TEXT = {
   cat:'смотрит в окно на птичек, сидя на высоком подоконнике',
@@ -73,8 +83,19 @@ var ACT_TEXT = {
   deer:'общипывает листья с кустика',
   wolf:'грызёт косточку в своём углу',
   lion:'играет с клубком пряжи',
-  fox:'утащила носок и треплет его'
+  fox:'утащила носок и треплет его',
+  turtle:'медленно таскает домик по полу и жуёт лист салата',
+  panda:'сидит и с аппетитом грызёт бамбук',
+  penguin:'катается на животе по полу, как на льду',
+  hedgehog:'семенит по дому с яблоком на иголках',
+  frog:'сидит на полу и ловит муху языком',
+  koala:'дремлет на ветке с листьями и жуёт эвкалипт',
+  peacock:'распустил хвост-веер и важно ходит',
+  otter:'лежит на спине и балансирует камешком',
+  bat:'висит вниз головой под потолком и спит',
+  hamster:'набивает щёки зерном и прячет запасы'
 };
+
 
 var MILESTONES = {3:30, 7:80, 14:180, 21:400};
 var FEED_PRICE = 15;
