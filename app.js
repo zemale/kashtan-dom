@@ -136,7 +136,8 @@ function defaultState(){
     pets: [], furniture: [], log: [], lastCollect: null,
     built: [], lastShow: null,
     garden: [null, null, null, null], tree: {watered: null, grown: 0},
-    seeds: {grass: 2, carrot: 1, sun: 0, berry: 0}
+    seeds: {grass: 2, carrot: 1, sun: 0, berry: 0},
+    accs: []
   };
 }
 
@@ -157,6 +158,8 @@ function load(){
   if(!S.tree) S.tree = {watered: null, grown: 0};
   if(!S.seeds) S.seeds = {grass: 0, carrot: 0, sun: 0, berry: 0};
   SEEDS.forEach(function(s){ if(S.seeds[s.id] === undefined) S.seeds[s.id] = 0; });
+  if(!S.accs) S.accs = [];
+  (S.pets || []).forEach(function(p){ if(!p.acc) p.acc = {}; });
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -559,7 +562,7 @@ function camsHTML(only){
       var bub = (sc && sc.bubbles[pi]) ? '<span class="pbub">' + sc.bubbles[pi] + '</span>' : '';
       var cls = (sc && sc.cls[pi]) ? ' ' + sc.cls[pi] : '';
       b.push('<div class="housePet act-' + d.a + cls + '" style="left:' + x + '%;bottom:' + y + '%;width:' + sz + '%;z-index:' + (20 + k) + '">' + bub +
-        '<div class="petBody">' + petSVG(pp.petId, pp.feed, 200, pp.level, tracesOf(pp)) + '</div>' + propsHTML +
+        '<div class="petBody">' + petSVG(pp.petId, pp.feed, 200, pp.level, tracesOf(pp), pp.acc) + '</div>' + propsHTML +
         (d.a === 'nap' ? '<span class="zzz">💤</span>' : '') +
         '</div>');
     });
@@ -805,7 +808,7 @@ function theaterCast(){
   var title = SHOW_TITLES[seed % SHOW_TITLES.length];
   var plot = SHOW_PLOTS[seed % SHOW_PLOTS.length];
   var nm = function(p){ return '<b>' + esc(p.name) + '</b>'; };
-  var pic = function(p){ return '<span class="castPet">' + petSVG(p.petId, p.feed, 58, p.level, tracesOf(p)) + '</span>'; };
+  var pic = function(p){ return '<span class="castPet">' + petSVG(p.petId, p.feed, 58, p.level, tracesOf(p), p.acc) + '</span>'; };
   var lines = [];
   lines.push('<i>Занавес поднимается. На сцене — ' + nm(a) + ' и ' + nm(c) + '.</i>');
   lines.push(pic(a) + nm(a) + ' — «' + plot[0] + '»');
@@ -1002,6 +1005,22 @@ function screenShop(){
       '<button class="btn primary" data-seed="' + s.id + '">' + s.price + ' 🌰</button>' +
       '</div></div>');
   });
+  b.push('<h2>Аксессуары</h2>');
+  b.push('<p class="hint">Шапки, очки и украшения. Купленное лежит в шкафу — надеваешь на питомца в его карточке.</p>');
+  ACC_SLOTS.forEach(function(sl){
+    var list = ACCESSORIES.filter(function(a){ return a.slot === sl.id; });
+    b.push('<h3>' + esc(sl.name) + '</h3>');
+    list.forEach(function(a){
+      var has = ownsAcc(a.id);
+      var wearer = accWearer(a.id);
+      b.push('<div class="card"><div class="item"><div class="ico">' + a.emoji + '</div>' +
+        '<div><div class="nm">' + esc(a.name) + '</div><div class="ds">' + esc(a.desc) + '</div></div>' +
+        '<div class="spacer"></div>' +
+        (has ? '<span class="pill good">' + (wearer ? 'на ' + esc(wearer.name) : 'куплено') + '</span>'
+             : '<button class="btn primary" data-acc="' + a.id + '">' + a.price + ' 🌰</button>') +
+        '</div></div>');
+    });
+  });
   b.push('<h2>Мебель</h2><p class="hint">Вещь сразу появляется в своей комнате, а потом её можно переставить как угодно.</p>');
   ROOMS.forEach(function(room){
     var list = FURNITURE.filter(function(f){ return f.room === room.id; });
@@ -1030,6 +1049,53 @@ function buy(id){
   toast(f.name + ' — в доме! Переставь как нравится');
 }
 
+/* ---------- аксессуары ---------- */
+function ownsAcc(id){ return (S.accs || []).indexOf(id) >= 0; }
+function accWearer(id){
+  var who = null;
+  (S.pets || []).forEach(function(p){
+    var a = ACC_MAP[id] || {};
+    if(p.acc && a.slot && p.acc[a.slot] === id) who = p;
+  });
+  return who;
+}
+function buyAcc(id){
+  var a = ACC_MAP[id];
+  if(!a || ownsAcc(id)) return;
+  if(S.coins < a.price){ toast('Не хватает каштанов — нужно ' + a.price + ' 🌰'); return; }
+  S.coins -= a.price;
+  S.accs.push(id);
+  save(); render();
+  toast(a.emoji + ' ' + a.name + ' — в шкафу. Надень в карточке питомца');
+}
+function equipAcc(petId, slot, accId){
+  var p = null;
+  S.pets.forEach(function(x){ if(x.id === petId) p = x; });
+  if(!p) return;
+  if(!p.acc) p.acc = {};
+  if(accId){
+    var other = accWearer(accId);
+    if(other && other.id !== p.id) other.acc[slot] = null;
+  }
+  p.acc[slot] = accId || null;
+  save(); petModal(petId);
+  toast(accId ? (ACC_MAP[accId].emoji + ' ' + ACC_MAP[accId].name + ' — надето') : 'Сняли');
+}
+function accBox(p){
+  var rows = ACC_SLOTS.map(function(sl){
+    var list = ACCESSORIES.filter(function(a){ return a.slot === sl.id && ownsAcc(a.id); });
+    var cur = (p.acc || {})[sl.id] || null;
+    var chips = list.map(function(a){
+      return '<button class="accBtn' + (cur === a.id ? ' on' : '') + '" data-weap="' + sl.id + ':' + a.id + '">' +
+        a.emoji + ' ' + esc(a.name) + '</button>';
+    }).join('');
+    if(!list.length) chips = '<span class="accNone">пусто — купи в магазине</span>';
+    else chips += '<button class="accBtn' + (cur ? '' : ' on') + '" data-weap="' + sl.id + ':">✖ снять</button>';
+    return '<div class="accRow"><div class="accLbl">' + sl.name + '</div><div class="accChips">' + chips + '</div></div>';
+  }).join('');
+  return '<h3 style="margin-top:16px">Аксессуары</h3><div class="accBox" data-pet="' + p.id + '">' + rows + '</div>';
+}
+
 /* ---------- питомцы ---------- */
 function screenPets(){
   var b = ['<h2>Питомцы</h2>'];
@@ -1040,7 +1106,7 @@ function screenPets(){
   } else {
     b.push('<h3>Живут у тебя</h3><div class="petShelf">');
     S.pets.forEach(function(p){
-      b.push('<div class="petMini" data-pet="' + p.id + '">' + petSVG(p.petId, p.feed, 92, p.level, tracesOf(p)) +
+      b.push('<div class="petMini" data-pet="' + p.id + '">' + petSVG(p.petId, p.feed, 92, p.level, tracesOf(p), p.acc) +
         '<b>' + esc(p.name) + '</b><div class="lvl">' + (FEED_MAP[p.feed] || FEED_MAP.base).emoji + ' ур.' + p.level + '</div></div>');
     });
     b.push('</div>');
@@ -1182,10 +1248,10 @@ function petModal(id){
     return '<button class="feedbtn' + (x.id === p.feed ? ' on' : '') + '" data-pfeed="' + x.id + '"><span>' + x.emoji + '</span>' + x.name + '</button>';
   }).join('');
   modal('<h3>' + esc(p.name) + '</h3>' +
-    '<div class="petBig">' + petSVG(p.petId, p.feed, 190, p.level, tracesOf(p)) + '</div>' +
+    '<div class="petBig">' + petSVG(p.petId, p.feed, 190, p.level, tracesOf(p), p.acc) + '</div>' +
     '<div class="meta" style="text-align:center">' + f.emoji + ' ' + f.name + ' · уровень ' + p.level + '</div>' +
     '<div class="traces">Накоплено: ' + tracesOf(p).map(function(x){ var q = FEED_MAP[x]; return q ? q.emoji : ''; }).join(' ') + '</div>' +
-    '<div class="actNote">🎯 Любит: ' + act + '.</div>' + relHTML(p) +
+    '<div class="actNote">🎯 Любит: ' + act + '.</div>' + accBox(p) + relHTML(p) +
     '<h3 style="margin-top:16px">Покормить · ' + FEED_PRICE + ' 🌰</h3>' +
     '<div class="feedGrid">' + btns + '</div>' +
     '<div class="row" style="margin-top:14px"><input class="inp" id="petName" value="' + esc(p.name) + '" maxlength="20">' +
@@ -1289,6 +1355,14 @@ document.addEventListener('click', function(e){
   var doBtn = t.closest('[data-do]');
   if(doBtn){ checkin(doBtn.getAttribute('data-h'), doBtn.getAttribute('data-do') === 'yes'); return; }
   if(t.closest('#addHabit')){ habitModal(); return; }
+  var accBtn = t.closest('[data-acc]');
+  if(accBtn){ buyAcc(accBtn.getAttribute('data-acc')); return; }
+  var wearBtn = t.closest('[data-weap]');
+  if(wearBtn){
+    var wv = wearBtn.getAttribute('data-weap').split(':');
+    var box = wearBtn.closest('.accBox');
+    equipAcc(box ? box.getAttribute('data-pet') : '', wv[0], wv[1] || null); return;
+  }
   var seedBtn = t.closest('[data-seed]');
   if(seedBtn){ buySeed(seedBtn.getAttribute('data-seed')); return; }
   var buyBtn = t.closest('[data-buy]');

@@ -472,7 +472,77 @@ const OVER = {
   }
 };
 
-function petSVG(petId, feed, size, level, traces){
+/* ---- аксессуары: шапки, очки, шейные украшения ---- */
+const ACC_SLOTS = [
+  {id:'hat',  name:'На голову'},
+  {id:'eyes', name:'На глаза'},
+  {id:'neck', name:'На шею'}
+];
+const ACCESSORIES = [
+  {id:'cap',    slot:'hat',  name:'Кепка',        emoji:'🧢', price:40,  desc:'Красная, козырьком вперёд'},
+  {id:'bow',    slot:'hat',  name:'Бантик',       emoji:'🎀', price:35,  desc:'Розовый, между ушей'},
+  {id:'tophat', slot:'hat',  name:'Цилиндр',      emoji:'🎩', price:70,  desc:'Чёрный, с золотой лентой'},
+  {id:'crown',  slot:'hat',  name:'Корона',       emoji:'👑', price:120, desc:'Золотая, с камушками'},
+  {id:'glasses',slot:'eyes', name:'Очки',         emoji:'👓', price:50,  desc:'Круглые, в тонкой оправе'},
+  {id:'shades', slot:'eyes', name:'Тёмные очки',  emoji:'🕶', price:80,  desc:'Как у звезды'},
+  {id:'bell',   slot:'neck', name:'Колокольчик',  emoji:'🔔', price:30,  desc:'Золотой, тихонько звенит'},
+  {id:'scarf',  slot:'neck', name:'Шарф',         emoji:'🧣', price:45,  desc:'Тёплый, полосатый'},
+  {id:'bowtie', slot:'neck', name:'Бабочка',      emoji:'🎀', price:55,  desc:'Нарядная, к празднику'},
+  {id:'pearls', slot:'neck', name:'Бусы',         emoji:'📿', price:90,  desc:'Жемчужные, в два ряда'}
+];
+const ACC_MAP = {};
+ACCESSORIES.forEach(function(a){ ACC_MAP[a.id] = a; });
+
+/* Рисуем поверх питомца. Координаты рассчитаны на морду в центре (50,45). */
+function accSVG(acc){
+  if(!acc) return '';
+  var s = '';
+  var hat = acc.hat && ACC_MAP[acc.hat];
+  if(hat && hat.id === 'cap')
+    s += '<path d="M31 29 q19 -20 38 0 z" fill="#e0524a"/><path d="M64 28 q13 -2 15 5 q-11 4 -15 0z" fill="#c33f38"/>' +
+         '<circle cx="50" cy="12" r="2.2" fill="#e0524a"/>';
+  if(hat && hat.id === 'bow')
+    s += '<g transform="translate(50 24)"><path d="M0 0 l-11 -6 v12z" fill="#f08fb0"/><path d="M0 0 l11 -6 v12z" fill="#f08fb0"/>' +
+         '<circle r="2.8" fill="#d96a90"/></g>';
+  if(hat && hat.id === 'tophat')
+    s += '<rect x="38" y="1" width="24" height="22" rx="3" fill="#2b2b31"/>' +
+         '<rect x="38" y="15" width="24" height="4" fill="#d8b56a"/>' +
+         '<rect x="29" y="21" width="42" height="5" rx="2.5" fill="#2b2b31"/>';
+  if(hat && hat.id === 'crown')
+    s += '<path d="M33 27 l4 -15 6 9 7 -13 7 13 6 -9 4 15 z" fill="#f0c14b" stroke="#c99a2e" stroke-width="1.2"/>' +
+         '<circle cx="50" cy="19" r="2" fill="#e0524a"/><circle cx="41" cy="23" r="1.6" fill="#6fa8d8"/><circle cx="59" cy="23" r="1.6" fill="#6fa8d8"/>';
+  var eyes = acc.eyes && ACC_MAP[acc.eyes];
+  if(eyes && eyes.id === 'glasses')
+    s += '<g fill="rgba(190,225,240,.28)" stroke="#4a4a52" stroke-width="1.8">' +
+         '<circle cx="43" cy="44" r="6"/><circle cx="57" cy="44" r="6"/></g>' +
+         '<path d="M49 44 h2 M37 42 l-5 -2 M63 42 l5 -2" stroke="#4a4a52" stroke-width="1.8" fill="none" stroke-linecap="round"/>';
+  if(eyes && eyes.id === 'shades')
+    s += '<g fill="#22252b"><rect x="36" y="40" width="13" height="9" rx="4"/><rect x="51" y="40" width="13" height="9" rx="4"/>' +
+         '<rect x="48.5" y="42" width="3" height="2" rx="1"/><rect x="32" y="41" width="4" height="1.8" rx=".9"/><rect x="64" y="41" width="4" height="1.8" rx=".9"/></g>' +
+         '<path d="M39 42 l3 0" stroke="rgba(255,255,255,.55)" stroke-width="1.4" stroke-linecap="round"/>';
+  var neck = acc.neck && ACC_MAP[acc.neck];
+  if(neck && neck.id === 'bell')
+    s += '<path d="M34 61 q16 10 32 0" stroke="#d94f4f" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+         '<circle cx="50" cy="69" r="4.6" fill="#f0c14b" stroke="#c99a2e" stroke-width="1.2"/>' +
+         '<path d="M47.6 72.6 h4.8" stroke="#8a6a20" stroke-width="1.4" stroke-linecap="round"/>';
+  if(neck && neck.id === 'scarf')
+    s += '<path d="M33 59 q17 12 34 0 q-1 8 -17 10 q-16 -2 -17 -10z" fill="#e0605f"/>' +
+         '<path d="M38 63 q12 7 24 0" stroke="#f7e7c8" stroke-width="1.6" fill="none"/>' +
+         '<path d="M41 66 q-4 11 1 16 h9 q-3 -9 -1 -13z" fill="#e0605f"/>' +
+         '<path d="M42 71 h8 M42 76 h8" stroke="#f7e7c8" stroke-width="1.4"/>';
+  if(neck && neck.id === 'bowtie')
+    s += '<path d="M50 64 l-12 -7 v14z" fill="#7a5ca8"/><path d="M50 64 l12 -7 v14z" fill="#7a5ca8"/>' +
+         '<circle cx="50" cy="64" r="3.2" fill="#5f4785"/>';
+  if(neck && neck.id === 'pearls')
+    s += '<g fill="#f8f4e8" stroke="#d9d2c2" stroke-width=".8">' +
+         '<circle cx="37" cy="61" r="2.4"/><circle cx="43" cy="65" r="2.4"/><circle cx="50" cy="67" r="2.6"/>' +
+         '<circle cx="57" cy="65" r="2.4"/><circle cx="63" cy="61" r="2.4"/></g>' +
+         '<g fill="#f8f4e8" stroke="#d9d2c2" stroke-width=".7"><circle cx="43" cy="60" r="1.9"/><circle cx="50" cy="62" r="2"/>' +
+         '<circle cx="57" cy="60" r="1.9"/></g>';
+  return s;
+}
+
+function petSVG(petId, feed, size, level, traces, acc){
   var pet = PET_MAP[petId] || PETS[0];
   var c = palette(feed, pet);
   var n = Math.max(1, Math.min(level || 1, 8));
@@ -492,6 +562,7 @@ function petSVG(petId, feed, size, level, traces){
   marks.forEach(function(f){ s += (OVER.back[f] || ''); });
   s += '<g transform="translate(0 ' + lift + ')">' + ART[pet.id] + '</g>';
   marks.forEach(function(f){ s += (OVER.front[f] || ''); });
+  s += accSVG(acc || {});
   s += '</g></svg>';
   return s;
 }
