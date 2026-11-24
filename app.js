@@ -134,7 +134,8 @@ function defaultState(){
       {id:uid(), title:'Не залипать в телефоне перед сном', kind:'bad', streak:0, best:0, last:null, frozen:false, days:{}}
     ],
     pets: [], furniture: [], log: [], lastCollect: null,
-    built: [], lastShow: null
+    built: [], lastShow: null,
+    garden: [null, null, null, null], tree: {watered: null, grown: 0}
   };
 }
 
@@ -150,6 +151,9 @@ function load(){
   if(S.lastCollect === undefined) S.lastCollect = null;
   if(!S.built) S.built = [];
   if(S.lastShow === undefined) S.lastShow = null;
+  if(!S.garden) S.garden = [null, null, null, null];
+  while(S.garden.length < BEDS) S.garden.push(null);
+  if(!S.tree) S.tree = {watered: null, grown: 0};
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -862,6 +866,107 @@ function buyRoom(id){
   toast('🏗 ' + r.name + ' построен! Камера уже в доме');
 }
 
+/* ---------- сад ---------- */
+var SEEDS = [
+  {id:'grass', name:'Травка', emoji:'🌱', price:15, gain:30, hours:3},
+  {id:'carrot', name:'Морковь', emoji:'🥕', price:25, gain:60, hours:4},
+  {id:'sun', name:'Подсолнух', emoji:'🌻', price:45, gain:110, hours:6},
+  {id:'berry', name:'Клубника', emoji:'🍓', price:70, gain:190, hours:8}
+];
+var SEED_MAP = {};
+SEEDS.forEach(function(s){ SEED_MAP[s.id] = s; });
+var BEDS = 4;
+var TREE_BONUS = 15;
+
+function gardenNeed(b){ return SEED_MAP[b.seed].hours * 3600000 * (b.watered ? 0.5 : 1); }
+function gardenProg(b){
+  var p = (Date.now() - b.at) / gardenNeed(b);
+  return Math.max(0, Math.min(1, p));
+}
+function gardenReady(b){ return gardenProg(b) >= 1; }
+function leftStr(ms){
+  if(ms <= 0) return 'готово';
+  var m = Math.ceil(ms / 60000);
+  if(m < 60) return m + ' мин';
+  return Math.floor(m / 60) + ' ч ' + (m % 60) + ' мин';
+}
+function treeWatered(){ return S.tree.watered === todayStr(); }
+function waterTree(){
+  if(treeWatered()) return;
+  S.tree.watered = todayStr();
+  S.tree.grown = (S.tree.grown || 0) + 1;
+  S.coins += TREE_BONUS;
+  var bonus = S.tree.grown % 7 === 0;
+  if(bonus) S.coins += 100;
+  save(); render();
+  toast(bonus ? '🍂 Дерево отблагодарило: +' + TREE_BONUS + ' и горсть каштанов +100 🌰'
+              : '💧 Полито! +' + TREE_BONUS + ' 🌰 · ещё ' + (7 - S.tree.grown % 7) + ' до горсти');
+}
+function plant(bed, seedId){
+  var s = SEED_MAP[seedId];
+  if(!s || S.garden[bed]) return;
+  if(S.coins < s.price){ toast('Не хватает каштанов — нужно ' + s.price + ' 🌰'); return; }
+  S.coins -= s.price;
+  S.garden[bed] = {seed: seedId, at: Date.now(), watered: false};
+  save(); render();
+  toast(s.emoji + ' ' + s.name + ' посажена. Полей — вырастет вдвое быстрее');
+}
+function waterBed(bed){
+  var b = S.garden[bed];
+  if(!b || b.watered || gardenReady(b)) return;
+  b.watered = true;
+  save(); render();
+  toast('💧 Полито — теперь растёт в два раза быстрее');
+}
+function harvest(bed){
+  var b = S.garden[bed];
+  if(!b || !gardenReady(b)) return;
+  var s = SEED_MAP[b.seed];
+  S.garden[bed] = null;
+  S.coins += s.gain;
+  save(); render();
+  toast(s.emoji + ' Урожай! +' + s.gain + ' 🌰');
+}
+function bedHTML(i){
+  var b = S.garden[i];
+  var no = '<div class="bedNo">Грядка ' + (i + 1) + '</div>';
+  if(!b){
+    return '<div class="bed empty">' + no + '<div class="soil"></div><div class="seedRow">' +
+      SEEDS.map(function(s){
+        return '<button class="seedBtn' + (S.coins >= s.price ? '' : ' no') + '" data-plant="' + i + ':' + s.id + '">' +
+          '<span class="se">' + s.emoji + '</span><span class="sp">' + s.price + '</span></button>';
+      }).join('') + '</div><div class="bedHint">выбери семена · 🌰</div></div>';
+  }
+  var s = SEED_MAP[b.seed];
+  var p = gardenProg(b);
+  var ready = p >= 1;
+  var art = ready ? s.emoji : (p < 0.34 ? '🌱' : (p < 0.75 ? '🌿' : s.emoji));
+  var action = ready
+    ? '<button class="btn primary bedBtn" data-harvest="' + i + '">Собрать +' + s.gain + ' 🌰</button>'
+    : (b.watered
+      ? '<div class="bedWait">💧 полито · ' + leftStr(gardenNeed(b) - (Date.now() - b.at)) + '</div>'
+      : '<button class="btn orange bedBtn" data-waterbed="' + i + '">💧 Полить</button>');
+  return '<div class="bed' + (ready ? ' ready' : '') + '">' + no +
+    '<div class="plant">' + art + '</div>' +
+    '<div class="bedName">' + s.emoji + ' ' + s.name + '</div>' +
+    '<div class="bar"><i style="width:' + Math.round(p * 100) + '%"></i></div>' + action + '</div>';
+}
+function screenGarden(){
+  var b = ['<h2>Сад</h2>'];
+  var tw = treeWatered();
+  b.push('<div class="card treeCard"><div class="treeArt">' + (S.tree.grown >= 7 ? '🌳🍂' : '🌳') + '</div>' +
+    '<div class="treeInfo"><div class="nm">Каштановое дерево</div><div class="ds">Поливов: ' + (S.tree.grown || 0) + ' · каждые 7 — горсть каштанов</div></div>' +
+    '<button class="btn ' + (tw ? 'ghost' : 'primary') + '" id="waterTree"' + (tw ? ' disabled' : '') + '>' +
+    (tw ? 'Полито' : '+' + TREE_BONUS + ' 🌰') + '</button></div>');
+  b.push('<h3>Грядки</h3><p class="hint">Посади, полей и подожди. Полив ускоряет рост вдвое.</p><div class="beds">');
+  for(var i = 0; i < BEDS; i++) b.push(bedHTML(i));
+  b.push('</div>');
+  b.push('<h3>Семена</h3><div class="card"><p class="hint" style="margin:0">' + SEEDS.map(function(s){
+    return s.emoji + ' <b>' + s.name + '</b> — ' + s.price + ' 🌰 → ' + s.gain + ' 🌰 за ' + s.hours + ' ч';
+  }).join('<br>') + '</p></div>');
+  return b.join('');
+}
+
 function screenShop(){
   var b = ['<h2>Магазин</h2>'];
   b.push('<h3>Здания</h3>');
@@ -1112,11 +1217,16 @@ function render(){
   if(tab === 'home') main.innerHTML = screenHome();
   else if(tab === 'habits') main.innerHTML = screenHabits();
   else if(tab === 'shop') main.innerHTML = screenShop();
+  else if(tab === 'garden') main.innerHTML = screenGarden();
   else main.innerHTML = screenPets();
   document.querySelectorAll('#tabs button').forEach(function(b){
     b.classList.toggle('on', b.getAttribute('data-tab') === tab);
   });
   bindHouseDrag();
+  clearInterval(window._gardenTimer);
+  if(tab === 'garden'){
+    window._gardenTimer = setInterval(function(){ if(tab === 'garden') render(); }, 20000);
+  }
   clearInterval(window._camTimer);
   if(tab === 'home' && !editMode){
     window._camTimer = setInterval(function(){
@@ -1158,6 +1268,13 @@ document.addEventListener('click', function(e){
   if(t.closest('#addHabit')){ habitModal(); return; }
   var buyBtn = t.closest('[data-buy]');
   if(buyBtn){ buy(buyBtn.getAttribute('data-buy')); return; }
+  if(t.closest('#waterTree')){ waterTree(); return; }
+  var plBtn = t.closest('[data-plant]');
+  if(plBtn){ var pr = plBtn.getAttribute('data-plant').split(':'); plant(+pr[0], pr[1]); return; }
+  var wbBed = t.closest('[data-waterbed]');
+  if(wbBed){ waterBed(+wbBed.getAttribute('data-waterbed')); return; }
+  var hvBtn = t.closest('[data-harvest]');
+  if(hvBtn){ harvest(+hvBtn.getAttribute('data-harvest')); return; }
   var petEl = t.closest('[data-pet]');
   if(petEl){ petModal(petEl.getAttribute('data-pet')); return; }
   if(t.closest('#adoptBtn')){ adoptModal(); return; }
