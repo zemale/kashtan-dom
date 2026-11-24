@@ -135,7 +135,8 @@ function defaultState(){
     ],
     pets: [], furniture: [], log: [], lastCollect: null,
     built: [], lastShow: null,
-    garden: [null, null, null, null], tree: {watered: null, grown: 0}
+    garden: [null, null, null, null], tree: {watered: null, grown: 0},
+    seeds: {grass: 2, carrot: 1, sun: 0, berry: 0}
   };
 }
 
@@ -154,6 +155,8 @@ function load(){
   if(!S.garden) S.garden = [null, null, null, null];
   while(S.garden.length < BEDS) S.garden.push(null);
   if(!S.tree) S.tree = {watered: null, grown: 0};
+  if(!S.seeds) S.seeds = {grass: 0, carrot: 0, sun: 0, berry: 0};
+  SEEDS.forEach(function(s){ if(S.seeds[s.id] === undefined) S.seeds[s.id] = 0; });
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -905,11 +908,21 @@ function waterTree(){
 function plant(bed, seedId){
   var s = SEED_MAP[seedId];
   if(!s || S.garden[bed]) return;
-  if(S.coins < s.price){ toast('Не хватает каштанов — нужно ' + s.price + ' 🌰'); return; }
-  S.coins -= s.price;
+  if(!S.seeds[seedId]){ toast('Семян нет — купи в магазине 🛍️'); return; }
+  S.seeds[seedId]--;
   S.garden[bed] = {seed: seedId, at: Date.now(), watered: false};
   save(); render();
   toast(s.emoji + ' ' + s.name + ' посажена. Полей — вырастет вдвое быстрее');
+}
+
+function buySeed(id){
+  var s = SEED_MAP[id];
+  if(!s) return;
+  if(S.coins < s.price){ toast('Не хватает каштанов — нужно ' + s.price + ' 🌰'); return; }
+  S.coins -= s.price;
+  S.seeds[id]++;
+  save(); render();
+  toast(s.emoji + ' ' + s.name + ' — теперь в сумке (' + S.seeds[id] + ')');
 }
 function waterBed(bed){
   var b = S.garden[bed];
@@ -933,9 +946,10 @@ function bedHTML(i){
   if(!b){
     return '<div class="bed empty">' + no + '<div class="soil"></div><div class="seedRow">' +
       SEEDS.map(function(s){
-        return '<button class="seedBtn' + (S.coins >= s.price ? '' : ' no') + '" data-plant="' + i + ':' + s.id + '">' +
-          '<span class="se">' + s.emoji + '</span><span class="sp">' + s.price + '</span></button>';
-      }).join('') + '</div><div class="bedHint">выбери семена · 🌰</div></div>';
+        var have = S.seeds[s.id] || 0;
+        return '<button class="seedBtn' + (have ? '' : ' no') + '" data-plant="' + i + ':' + s.id + '">' +
+          '<span class="se">' + s.emoji + '</span><span class="sp">' + (have ? '×' + have : 'нет') + '</span></button>';
+      }).join('') + '</div><div class="bedHint">семена — в магазине 🛍️</div></div>';
   }
   var s = SEED_MAP[b.seed];
   var p = gardenProg(b);
@@ -977,6 +991,15 @@ function screenShop(){
       '<div><div class="nm">' + esc(r.name) + '</div><div class="ds">' + esc(r.bonus) + '</div></div>' +
       '<div class="spacer"></div>' +
       (has ? '<span class="pill good">Построено</span>' : '<button class="btn primary" data-build="' + r.id + '">' + r.price + ' 🌰</button>') +
+      '</div></div>');
+  });
+  b.push('<h2>Семена</h2>');
+  b.push('<p class="hint">Покупаешь здесь — сажаешь на грядках во вкладке «Сад».</p>');
+  SEEDS.forEach(function(s){
+    b.push('<div class="card"><div class="item"><div class="ico">' + s.emoji + '</div>' +
+      '<div><div class="nm">' + esc(s.name) + '</div><div class="ds">+' + s.gain + ' 🌰 через ' + s.hours + ' ч · в сумке: ' + (S.seeds[s.id] || 0) + '</div></div>' +
+      '<div class="spacer"></div>' +
+      '<button class="btn primary" data-seed="' + s.id + '">' + s.price + ' 🌰</button>' +
       '</div></div>');
   });
   b.push('<h2>Мебель</h2><p class="hint">Вещь сразу появляется в своей комнате, а потом её можно переставить как угодно.</p>');
@@ -1266,6 +1289,8 @@ document.addEventListener('click', function(e){
   var doBtn = t.closest('[data-do]');
   if(doBtn){ checkin(doBtn.getAttribute('data-h'), doBtn.getAttribute('data-do') === 'yes'); return; }
   if(t.closest('#addHabit')){ habitModal(); return; }
+  var seedBtn = t.closest('[data-seed]');
+  if(seedBtn){ buySeed(seedBtn.getAttribute('data-seed')); return; }
   var buyBtn = t.closest('[data-buy]');
   if(buyBtn){ buy(buyBtn.getAttribute('data-buy')); return; }
   if(t.closest('#waterTree')){ waterTree(); return; }
