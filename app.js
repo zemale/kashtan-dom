@@ -25,7 +25,8 @@ var FURNITURE = [
   {id:'toybox', name:'Коробка игрушек', emoji:'🧸', price:75,  x:70, y:4,  size:28, z:2, room:'kids',    desc:'Тут живёт плюшевый'},
   {id:'cactus', name:'Кактус',          emoji:'🌵', price:35,  x:14, y:6,  size:24, z:3, room:'kids',    desc:'Колючий, но свой'},
   {id:'guitar', name:'Гитара',          emoji:'🎸', price:100, x:82, y:5,  size:30, z:3, room:'kids',    desc:'Петь под неё'},
-  {id:'nighlight', name:'Ночник',       emoji:'🕯', price:45,  x:44, y:6,  size:22, z:3, room:'kids',    desc:'Не страшно в темноте'}
+  {id:'nighlight', name:'Ночник',       emoji:'🕯', price:45,  x:44, y:6,  size:22, z:3, room:'kids',    desc:'Не страшно в темноте'},
+  {id:'fireplace', name:'Камин',        emoji:'🔥', price:140, x:8,  y:8,  size:34, z:2, room:'living',  desc:'Треск дров и тёплый свет', anim:'fire'}
 ];
 var FURN_MAP = {};
 FURNITURE.forEach(function(f){ f.x0 = f.x; f.y0 = f.y; FURN_MAP[f.id] = f; });
@@ -61,6 +62,25 @@ var WALLPAPERS = [
 ];
 var WALLPAPER_MAP = {};
 WALLPAPERS.forEach(function(w){ WALLPAPER_MAP[w.id] = w; });
+
+/* ---------- v21: новые штуки ---------- */
+var VIEWS = [
+  {id:'forest', name:'Лес',    emoji:'🌲', price:60,  desc:'сосны до неба и утренний туман'},
+  {id:'sea',    name:'Море',   emoji:'🌊', price:80,  desc:'волны, чайки и солёный ветер'},
+  {id:'city',   name:'Город',  emoji:'🏙', price:90,  desc:'огни домов и машины внизу'},
+  {id:'space',  name:'Космос', emoji:'🌌', price:120, desc:'звёзды, туманности и тишина'},
+  {id:'rain',   name:'Дождь',  emoji:'🌧', price:50,  desc:'стук капель по подоконнику'}
+];
+var VIEW_MAP = {};
+VIEWS.forEach(function(v){ VIEW_MAP[v.id] = v; });
+
+var TRINKETS = [
+  {e:'🪶', name:'пёрышко'}, {e:'🪨', name:'камушек'}, {e:'🧦', name:'носок'},
+  {e:'🐚', name:'ракушку'}, {e:'🌸', name:'цветочек'}, {e:'🍃', name:'листик'},
+  {e:'🔘', name:'пуговицу'}
+];
+var GIFT_BASE = 20, GIFT_STEP = 10;
+var SWING_PRICE = 30, PARADE_PRIZE = 60;
 
 /* чем занят питомец: x/y — место в доме, s — размер, a — анимация */
 var PET_ACTS = {
@@ -149,7 +169,9 @@ function defaultState(){
     garden: [null, null, null, null], tree: {watered: null, grown: 0},
     seeds: {grass: 2, carrot: 1, sun: 0, berry: 0},
     accs: [], wallpapers: [], pat: null,
-    photos: [], trainAt: {}, photoAt: 0
+    photos: [], trainAt: {}, photoAt: 0,
+    gift: {day:null, streak:0}, views: [], view: 'auto',
+    trinkets: [], trinketDay: null, swingDay: null, paradeDay: null, paradeWins: 0
   };
 }
 
@@ -178,6 +200,16 @@ function load(){
   if(!S.trainAt) S.trainAt = {};
   if(S.photoAt == null) S.photoAt = 0;
   (S.pets || []).forEach(function(p){ if(!p.tricks) p.tricks = []; });
+  if(!S.gift) S.gift = {day:null, streak:0};
+  if(!S.views) S.views = [];
+  if(S.view === undefined) S.view = 'auto';
+  if(!S.trinkets) S.trinkets = [];
+  if(S.trinketDay === undefined) S.trinketDay = null;
+  if(S.swingDay === undefined) S.swingDay = null;
+  if(S.paradeDay === undefined) S.paradeDay = null;
+  if(!S.paradeWins) S.paradeWins = 0;
+  if(S.balcony === undefined) S.balcony = false;
+  if(S.evening === undefined) S.evening = false;
   if(!WALL_MAP[S.wall]) S.wall = 'cream';
   if(!FLOOR_MAP[S.floor]) S.floor = 'oak';
   S.furniture = (S.furniture || []).map(function(it){
@@ -305,18 +337,35 @@ function weatherToday(){
 }
 function windowHTML(){
   var ph = dayPhase(), wx = weatherToday();
+  var v = S.view || 'auto';
   var art = '';
-  if(ph === 'night'){
-    art += '<i class="moon"></i>';
-    for(var si = 1; si <= 5; si++) art += '<i class="star s' + si + '"></i>';
+  if(v === 'forest'){
+    art += '<i class="scTree st1"></i><i class="scTree st2"></i><i class="scTree st3"></i><i class="scGrass"></i>';
+    art += ph === 'night' ? '<i class="moon"></i>' : '<i class="sun soft"></i>';
+  } else if(v === 'sea'){
+    art += '<i class="seaSky"></i><i class="wave sw1"></i><i class="wave sw2"></i>';
+    art += ph === 'night' ? '<i class="moon"></i>' : '<i class="sun soft"></i>';
+  } else if(v === 'city'){
+    art += '<i class="cbld c1"></i><i class="cbld c2"></i><i class="cbld c3"></i><i class="cbld c4"></i>';
+    if(ph === 'night'){ art += '<i class="moon"></i><i class="clights"></i>'; } else art += '<i class="sun soft"></i>';
+  } else if(v === 'space'){
+    for(var si2 = 1; si2 <= 7; si2++) art += '<i class="star s' + ((si2 % 5) + 1) + '"></i>';
+    art += '<i class="planet"></i>';
+  } else if(v === 'rain'){
+    art += '<i class="cloud ca"></i><i class="cloud cb"></i><i class="precip rain"></i>';
   } else {
-    art += '<i class="sun' + (ph === 'dawn' ? ' dawn' : ph === 'dusk' ? ' dusk' : '') + '"></i>';
-    if(wx === 'clear' && ph === 'day') art += '<i class="cloud ca soft"></i>';
+    if(ph === 'night'){
+      art += '<i class="moon"></i>';
+      for(var si = 1; si <= 5; si++) art += '<i class="star s' + si + '"></i>';
+    } else {
+      art += '<i class="sun' + (ph === 'dawn' ? ' dawn' : ph === 'dusk' ? ' dusk' : '') + '"></i>';
+      if(wx === 'clear' && ph === 'day') art += '<i class="cloud ca soft"></i>';
+    }
+    if(wx === 'clouds' || wx === 'rain' || wx === 'snow') art += '<i class="cloud ca"></i><i class="cloud cb"></i>';
+    if(wx === 'rain') art += '<i class="precip rain"></i>';
+    if(wx === 'snow') art += '<i class="precip snow"></i>';
   }
-  if(wx === 'clouds' || wx === 'rain' || wx === 'snow') art += '<i class="cloud ca"></i><i class="cloud cb"></i>';
-  if(wx === 'rain') art += '<i class="precip rain"></i>';
-  if(wx === 'snow') art += '<i class="precip snow"></i>';
-  return '<div class="window ph-' + ph + ' wx-' + wx + '" title="' + PHASES[ph] + ' · ' + WEATHERS[wx] + '">' +
+  return '<div class="window view-' + v + ' ph-' + ph + ' wx-' + wx + '" title="' + PHASES[ph] + ' · ' + WEATHERS[wx] + '">' +
     '<div class="sky">' + art + '</div><div class="frame"></div></div>';
 }
 function dayBadgeHTML(){
@@ -728,8 +777,9 @@ function camsHTML(only){
 }
 
 function houseHTML(){
-  var b = ['<div class="house' + (editMode ? ' edit' : '') + (zoomRoom != null ? ' zoom' : '') + '" id="house">'];
+  var b = ['<div class="house' + (editMode ? ' edit' : '') + (zoomRoom != null ? ' zoom' : '') + (S.evening ? ' evening' : '') + '" id="house">'];
   b.push('<div id="camsWrap">' + camsHTML(zoomRoom) + '</div>');
+  if(S.evening) b.push('<div class="garlandString"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>');
   if(!S.pets.length){
     b.push('<div class="emptyHouse">Дом пустой — заведи первого питомца 🐾</div>');
   }
@@ -764,8 +814,14 @@ function screenHome(){
   S.habits.forEach(function(x){ totalStreak = Math.max(totalStreak, x.streak); });
   var b = [];
   b.push(houseHTML());
+  if(!editMode && zoomRoom == null) b.push(balconyHTML());
   if(!editMode && zoomRoom == null) b.push(dayBadgeHTML());
   if(!editMode && zoomRoom == null) b.push(incomeHTML());
+  if(!editMode && zoomRoom == null) b.push(giftHTML());
+  if(!editMode && zoomRoom == null) b.push(trinketHTML());
+  if(!editMode && zoomRoom == null) b.push(albumHTML());
+  if(!editMode && zoomRoom == null) b.push(paradeHTML());
+  if(!editMode && zoomRoom == null) b.push(eveningHTML());
   if(!editMode && zoomRoom == null && S.pets.length) b.push('<p class="hint camHint">Тыкни в комнату — откроется крупно, как с камеры 📹</p>');
   b.push('<div class="row" style="margin-bottom:10px"><button class="btn ' + (editMode ? 'primary' : '') + '" id="editHouse" style="flex:1;padding:12px">' +
     (editMode ? '✓ Готово' : '✏️ Обставить дом') + '</button></div>');
@@ -1152,6 +1208,22 @@ function screenShop(){
       (has ? '<span class="pill good">Построено</span>' : '<button class="btn primary" data-build="' + r.id + '">' + r.price + ' 🌰</button>') +
       '</div></div>');
   });
+  b.push('<h3>Окна с видом</h3>');
+  b.push('<p class="hint">Пейзаж за окном сразу во всех комнатах. Купила — включается.</p>');
+  VIEWS.forEach(function(v){
+    var has = S.views.indexOf(v.id) >= 0;
+    var on = S.view === v.id;
+    b.push('<div class="card"><div class="item"><div class="ico">' + v.emoji + '</div>' +
+      '<div><div class="nm">' + esc(v.name) + '</div><div class="ds">' + esc(v.desc) + '</div></div>' +
+      '<div class="spacer"></div>' +
+      (on ? '<span class="pill good">За окном</span>'
+          : has ? '<button class="btn" data-view="' + v.id + '">Включить</button>'
+                : '<button class="btn primary" data-buyview="' + v.id + '">' + v.price + ' 🌰</button>') +
+      '</div></div>');
+  });
+  b.push('<h3>Уют</h3>');
+  b.push('<div class="card"><div class="item"><div class="ico">🌿</div><div><div class="nm">Балкон с качелями</div><div class="ds">Мини-зона, где питомцы качаются · +' + SWING_PRICE + ' 🌰 в день</div></div><div class="spacer"></div>' +
+    (S.balcony ? '<span class="pill good">Есть</span>' : '<button class="btn primary" data-balcony="1">120 🌰</button>') + '</div></div>');
   b.push('<h2>Семена</h2>');
   b.push('<p class="hint">Покупаешь здесь — сажаешь на грядках во вкладке «Сад».</p>');
   SEEDS.forEach(function(s){
@@ -1509,6 +1581,213 @@ function feedPet(id, feed){
 }
 
 /* ---------- модалка ---------- */
+/* ---------- v21: подарок дня ---------- */
+function dateShift(n){
+  var d = new Date(Date.now() + n * 86400000);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function giftStreak(){
+  var g = S.gift || {day:null, streak:0};
+  if(g.day === todayStr()) return g.streak || 1;
+  return (g.day === dateShift(-1)) ? (g.streak || 0) + 1 : 1;
+}
+function giftAmount(streak){ return Math.min(150, GIFT_BASE + (streak - 1) * GIFT_STEP); }
+function giftHTML(){
+  var done = S.gift && S.gift.day === todayStr();
+  var streak = giftStreak();
+  var amount = giftAmount(streak);
+  return '<div class="card giftCard' + (done ? ' done' : '') + '">' +
+    '<div class="giftArt">' + (done ? '🎉' : '🎁') + '</div>' +
+    '<div style="flex:1;min-width:0"><div class="nm">' + (done ? 'Подарок открыт' : 'Подарок дня') + '</div>' +
+    '<div class="ds">' + (done ? 'Серия ' + streak + ' дн. · ждём завтра' : 'Серия ' + streak + ' дн. подряд · внутри +' + amount + ' 🌰') + '</div></div>' +
+    (done ? '<span class="pill good">✓</span>' : '<button class="btn orange" id="openGift">Открыть</button>') +
+    '</div>';
+}
+function openGift(){
+  if(S.gift && S.gift.day === todayStr()){ toast('Сегодня уже открывала 🎁'); return; }
+  var streak = giftStreak();
+  var amount = giftAmount(streak);
+  S.gift = {day: todayStr(), streak: streak};
+  S.coins += amount;
+  save(); render();
+  toast('🎁 Подарок дня: +' + amount + ' 🌰 · серия ' + streak + ' дн.');
+}
+
+/* ---------- v21: фотоальбом ---------- */
+function albumHTML(){
+  if(!S.photos.length) return '';
+  return '<div class="card"><div class="item"><div class="ico">📸</div>' +
+    '<div><div class="nm">Фотоальбом</div><div class="ds">' + S.photos.length + ' кадров с подиума</div></div>' +
+    '<div class="spacer"></div><button class="btn" id="openAlbum">Смотреть</button></div></div>';
+}
+function openAlbum(){
+  if(!S.photos.length){ toast('Пока ни одного кадра — зайди на подиум 📸'); return; }
+  var html = '<h3>📸 Фотоальбом</h3><p class="hint" style="margin:0 0 10px;text-align:left">Все кадры с подиума — ' + S.photos.length + '</p><div class="albumGrid">';
+  S.photos.forEach(function(sh){
+    var p = null;
+    S.pets.forEach(function(x){ if(x.id === sh.pid) p = x; });
+    var d = new Date(sh.at || Date.now());
+    var dt = pad2(d.getDate()) + '.' + pad2(d.getMonth() + 1);
+    html += '<div class="albumItem">' + petSVG(sh.petId, p ? p.feed : 'base', 88, p ? p.level : 1, p ? tracesOf(p) : [], p ? p.acc : null) +
+      '<b>' + esc(p ? p.name : 'кадр') + '</b><span>' + esc(sh.pose) + '</span><em>' + dt + '</em></div>';
+  });
+  html += '</div><button class="btn" data-close="1" style="width:100%;margin-top:12px">Закрыть</button>';
+  modal(html);
+}
+
+/* ---------- v21: балкон с качелями ---------- */
+function balconyHTML(){
+  if(!S.balcony) return '';
+  var done = S.swingDay === todayStr();
+  var riders = S.pets.slice(0, 2);
+  var art = riders.map(function(p, i){
+    return '<div class="swingPet" style="left:' + (i ? 68 : 22) + '%">' + petSVG(p.petId, p.feed, 62, p.level, tracesOf(p), p.acc) + '</div>';
+  }).join('');
+  return '<div class="balcony"><div class="bSun"></div><div class="bRail"></div>' +
+    '<div class="bRope l"></div><div class="bRope r"></div><div class="bSeat"></div>' + art +
+    '<div class="bTxt">Балкон с качелями</div></div>' +
+    '<button class="btn ' + (done ? '' : 'primary') + '" id="swingBtn"' + (done || !riders.length ? ' disabled' : '') + ' style="width:100%;margin:-4px 0 12px">' +
+      (riders.length ? (done ? 'Накачались ✓ до завтра' : '🌿 Покачать на качелях · +' + SWING_PRICE + ' 🌰') : 'Заведи питомца — будет кому качаться') +
+    '</button>';
+}
+function swingNow(){
+  if(!S.balcony) return;
+  if(!S.pets.length){ toast('Сначала заведи питомца'); return; }
+  if(S.swingDay === todayStr()){ toast('Уже накачались — приходи завтра'); return; }
+  S.swingDay = todayStr();
+  S.coins += SWING_PRICE;
+  save(); render();
+  toast('🌿 Качели скрипят, питомцы довольны · +' + SWING_PRICE + ' 🌰');
+}
+
+/* ---------- v21: подарки от питомца ---------- */
+function trinketSeed(){ return Math.abs(Math.floor(dayNum(todayStr()) || 0)); }
+function trinketHTML(){
+  if(!S.pets.length) return '';
+  var got = S.trinketDay === todayStr();
+  var n = trinketSeed();
+  var t = TRINKETS[n % TRINKETS.length];
+  var p = S.pets[n % S.pets.length];
+  return '<div class="card trinketCard"><div class="item"><div class="ico">' + (got ? '🎀' : t.e) + '</div>' +
+    '<div><div class="nm">' + (got ? 'Подарок уже принят' : esc(p.name) + ' принёс ' + esc(t.name)) + '</div>' +
+    '<div class="ds">' + (got ? 'В коллекции ' + S.trinkets.length + ' мелочей' : 'Раз в день питомец приносит что-то из дома') + '</div></div>' +
+    '<div class="spacer"></div>' +
+    (got ? '<span class="pill good">✓</span>' : '<button class="btn" id="takeTrinket">Принять</button>') +
+    '</div>' +
+    (S.trinkets.length ? '<div class="trinketRow">' + S.trinkets.slice(-14).map(function(x){ return '<span title="' + esc(x.name) + '">' + x.e + '</span>'; }).join('') + '</div>' : '') +
+    '</div>';
+}
+function takeTrinket(){
+  if(S.trinketDay === todayStr()){ toast('Сегодня уже приносил 🎀'); return; }
+  if(!S.pets.length){ toast('Сначала заведи питомца'); return; }
+  var n = trinketSeed();
+  var t = TRINKETS[n % TRINKETS.length];
+  var p = S.pets[n % S.pets.length];
+  S.trinkets.push({e:t.e, name:t.name, from:p.name, at:Date.now()});
+  if(S.trinkets.length > 40) S.trinkets.shift();
+  S.trinketDay = todayStr();
+  S.coins += 5;
+  save(); render();
+  toast('🎀 ' + p.name + ' принёс ' + t.name + ' · +5 🌰');
+}
+
+/* ---------- v21: гирлянда и ночник ---------- */
+function eveningHTML(){
+  var on = !!S.evening;
+  return '<div class="card"><div class="item"><div class="ico">' + (on ? '✨' : '🕯') + '</div>' +
+    '<div><div class="nm">Гирлянда и ночник</div><div class="ds">' + (on ? 'Вечерний свет включён — в комнатах тепло' : 'Выключен · включи, когда стемнеет') + '</div></div>' +
+    '<div class="spacer"></div><button class="btn' + (on ? ' primary' : '') + '" id="eveningBtn">' + (on ? 'Выключить' : 'Включить') + '</button></div></div>';
+}
+function toggleEvening(){ S.evening = !S.evening; save(); render(); toast(S.evening ? '✨ Гирлянда зажглась, ночник горит' : 'Свет выключен — комнаты дневные'); }
+
+/* ---------- v21: парад нарядов ---------- */
+var paradePick = [];
+function paradeHTML(){
+  if(S.pets.length < 3){
+    return '<div class="card"><div class="item"><div class="ico">🎭</div><div><div class="nm">Парад нарядов</div><div class="ds">Нужно хотя бы три питомца</div></div></div></div>';
+  }
+  var done = S.paradeDay === todayStr();
+  return '<div class="card"><div class="item"><div class="ico">🎭</div>' +
+    '<div><div class="nm">Парад нарядов</div><div class="ds">' + (done ? 'Сегодняшний парад прошёл · побед: ' + S.paradeWins : 'Три участника, зрители голосуют · приз ' + PARADE_PRIZE + ' 🌰') + '</div></div>' +
+    '<div class="spacer"></div>' +
+    (done ? '<span class="pill good">✓</span>' : '<button class="btn orange" id="openParade">Устроить</button>') +
+    '</div></div>';
+}
+function paradeInner(){
+  var html = '<h3>🎭 Парад нарядов</h3><p class="hint" style="text-align:left;margin:0 0 10px">Выбери трёх питомцев — зрители будут за них голосовать.</p><div class="pickGrid">';
+  S.pets.forEach(function(p){
+    var on = paradePick.indexOf(p.id) >= 0;
+    html += '<div class="pick' + (on ? ' on' : '') + '" data-parade-pet="' + p.id + '">' + petSVG(p.petId, p.feed, 78, p.level, tracesOf(p), p.acc) +
+      '<b>' + esc(p.name) + '</b></div>';
+  });
+  html += '</div><div style="margin-top:10px"><button class="btn ' + (paradePick.length === 3 ? 'primary' : '') + '" id="paradeGo"' + (paradePick.length === 3 ? '' : ' disabled') + ' style="width:100%">' +
+    (paradePick.length === 3 ? 'Начать парад 🎬' : 'Выбрано ' + paradePick.length + ' из 3') + '</button></div>';
+  html += '<div id="paradeRes"></div>';
+  return html;
+}
+function paradeModal(){
+  if(S.pets.length < 3){ toast('Нужно хотя бы три питомца'); return; }
+  if(S.paradeDay === todayStr()){ toast('Парад уже был — ждём завтра'); return; }
+  paradePick = [];
+  modal(paradeInner());
+}
+function paradeToggle(id){
+  var i = paradePick.indexOf(id);
+  if(i >= 0) paradePick.splice(i, 1);
+  else {
+    if(paradePick.length >= 3){ toast('Только три участника'); return; }
+    paradePick.push(id);
+  }
+  var sheet = document.getElementById('sheet');
+  if(sheet) sheet.innerHTML = paradeInner();
+}
+function paradeGo(){
+  if(paradePick.length !== 3){ toast('Нужно три участника'); return; }
+  if(S.paradeDay === todayStr()){ toast('Парад уже был сегодня'); return; }
+  var list = [];
+  paradePick.forEach(function(id){
+    var p = null;
+    S.pets.forEach(function(x){ if(x.id === id) p = x; });
+    if(!p) return;
+    var accN = 0;
+    if(p.acc) Object.keys(p.acc).forEach(function(k){ if(p.acc[k]) accN++; });
+    list.push({p:p, score: accN * 3 + (p.level || 1) + Math.random() * 4});
+  });
+  if(!list.length) return;
+  list.sort(function(a,b){ return b.score - a.score; });
+  var win = list[0];
+  S.coins += PARADE_PRIZE;
+  S.paradeDay = todayStr();
+  S.paradeWins = (S.paradeWins || 0) + 1;
+  save(); render();
+  var res = document.getElementById('paradeRes');
+  if(res){
+    res.innerHTML = '<div class="paradeWin"><div class="nm">🏆 Лучший образ — ' + esc(win.p.name) + '</div>' +
+      '<div class="ds">Зрители хлопают · +' + PARADE_PRIZE + ' 🌰</div></div>' +
+      '<button class="btn" data-close="1" style="width:100%;margin-top:10px">Готово</button>';
+  }
+  toast('🏆 Парад: победила ' + win.p.name + ' · +' + PARADE_PRIZE + ' 🌰');
+}
+
+/* ---------- v21: покупки ---------- */
+function buyView(id){
+  var v = VIEW_MAP[id];
+  if(!v) return;
+  if(S.views.indexOf(id) < 0){
+    if(S.coins < v.price){ toast('Не хватает каштанов — нужно ' + v.price + ' 🌰'); return; }
+    S.coins -= v.price; S.views.push(id); S.view = id;
+    save(); render(); toast('🪟 Вид из окна: ' + v.name);
+    return;
+  }
+  S.view = (S.view === id ? 'auto' : id);
+  save(); render(); toast(S.view === 'auto' ? '🪟 Обычное окно — погода как есть' : '🪟 Вид из окна: ' + v.name);
+}
+function buyBalcony(){
+  if(S.balcony){ toast('Балкон уже есть'); return; }
+  if(S.coins < 120){ toast('Не хватает каштанов — нужно 120 🌰'); return; }
+  S.coins -= 120; S.balcony = true; save(); render(); toast('🌿 Балкон с качелями построен!');
+}
+
 function modal(html){
   var m = document.getElementById('modal');
   var sheet = document.getElementById('sheet');
@@ -1609,6 +1888,20 @@ document.addEventListener('click', function(e){
   if(wbBed){ waterBed(+wbBed.getAttribute('data-waterbed')); return; }
   var hvBtn = t.closest('[data-harvest]');
   if(hvBtn){ harvest(+hvBtn.getAttribute('data-harvest')); return; }
+  if(t.closest('#openGift')){ openGift(); return; }
+  if(t.closest('#openAlbum')){ openAlbum(); return; }
+  if(t.closest('#takeTrinket')){ takeTrinket(); return; }
+  if(t.closest('#openParade')){ paradeModal(); return; }
+  if(t.closest('#eveningBtn')){ toggleEvening(); return; }
+  if(t.closest('#swingBtn') && !t.closest('#swingBtn').disabled){ swingNow(); return; }
+  var viewBtn = t.closest('[data-view]');
+  if(viewBtn){ buyView(viewBtn.getAttribute('data-view')); return; }
+  var buyViewBtn = t.closest('[data-buyview]');
+  if(buyViewBtn){ buyView(buyViewBtn.getAttribute('data-buyview')); return; }
+  if(t.closest('[data-balcony]')){ buyBalcony(); return; }
+  var paradePet = t.closest('[data-parade-pet]');
+  if(paradePet){ paradeToggle(paradePet.getAttribute('data-parade-pet')); return; }
+  if(t.closest('#paradeGo') && !t.closest('#paradeGo').disabled){ paradeGo(); return; }
   var petEl = t.closest('[data-pet]');
   if(petEl){ petModal(petEl.getAttribute('data-pet')); return; }
   if(t.closest('#adoptBtn')){ adoptModal(); return; }
